@@ -10,12 +10,19 @@
 #define NOTE_COUNT 4
 #define LINES 20
 #define COLUMNS 5
-#define NOTE_DELAY 500
+#define NOTE_DELAY 300
 #define PAUSE getch();
 #define CLS printf("\033[2J\033[1;1H");
-#define SPAUSE printf("Press any key to continue..."); PAUSE
+#define SPAUSE printf("Press any key to continue. . ."); PAUSE
+#define RED "\033[31m"
+#define GREEN "\033[32m"
+#define YELLOW "\033[33m"
+#define BLUE "\033[34m"
+#define RESET "\033[0m"
+#define BLACK "\033[30m"
+#define ORANGE "\033[38;5;202m"
 
-/* Struct definitions*/
+/* Struct definitions */
 typedef struct{
     int lin; // Position of the note (line)
     int col; // Position of the note (column)
@@ -23,33 +30,39 @@ typedef struct{
 
 typedef struct{
     char key; // Corresponding key
+    char *color; // Key color
     TPosition pos; // Position of the note
 } TNote;
 
-/* Function declarations */
+/* Global variables */
+int score = 0; // Score variable
+int combo = 0; // Combo variable
+
+/* Functions declarations */
 void menu(); // Show main menu
 void start(); // Start the game
-void title(); // Type the title: "Guitar Hero"
-void option(int op); // Choose option
+void title(char *title); // Type the title: "Guitar Hero"
+void option(char op); // Choose option
 void play(); // Play the game
 void showRecords(); // Show player records
 void showRanking(); // Show players rankings
-int catchKey(); // Get user input
-void game(TNote note); // Game logic
+void printGame(TNote note); // Game logic
 void exitGame(); // Exit the game
+void displayScore(); // Display current score
 
 int main(){
-    int op;
+    char op;
     srand((unsigned)time(NULL));
+    SetConsoleOutputCP(65001);
 
     CLS
     start();
-    do{
+    while(1){
         menu();
-        op = catchKey();
+        op = getch();
 
         option(op);
-    } while(op != 4);
+    }
 
     return 0;
 }
@@ -64,19 +77,19 @@ void menu(){
     printf("** Enter your choice: ");
 }
 
-void option(int op){
+void option(char op){
     CLS
     switch(op){
-        case 1:
+        case '1':
             play();
             break;
-        case 2:
+        case '2':
             showRecords();
             break;
-        case 3:
+        case '3':
             showRanking();
             break;
-        case 4:
+        case '4':
             exitGame();
             break;
         default:
@@ -87,53 +100,118 @@ void option(int op){
 
 void play(){
     TNote note;
-    const char key[NOTE_COUNT] = {'A', 'S', 'D', 'F'};
+    int check;
 
+    combo = 0;
     note.pos.lin = 0;
     note.pos.col = rand() % COLUMNS;
-    note.key = key[rand() % NOTE_COUNT];
-    for(int i = 0; i < LINES; i++){
-        CLS
-        game(note);
 
-        note.pos.lin++;
-        Sleep(NOTE_DELAY);
+    if(note.pos.col == 0){
+        note.key = 'A';
+        note.color = GREEN;
+    } else if(note.pos.col == 1){
+        note.key = 'S';
+        note.color = RED;
+    } else if(note.pos.col == 2){
+        note.key = 'J';
+        note.color = YELLOW;
+    } else if(note.pos.col == 3){
+        note.key = 'K';
+        note.color = BLUE;
+    } else{
+        note.key = 'L';
+        note.color = ORANGE;
     }
 
-    printf("Game Over (Simulation)");
-    PAUSE
+    while(1){
+        CLS
+        printGame(note);
+
+        check = 0;
+        if(kbhit()){ // Check if a key is pressed
+            char pressed = getch();
+            if(toupper(pressed) == note.key && note.pos.lin == 11){
+                score += 10;
+                combo++;
+            } else{
+                combo = 0;
+            }
+            check = 1;
+        }
+
+        if(note.pos.lin >= LINES){
+            break;
+        }
+
+        if(check){
+            note.pos.lin = 0;
+            note.pos.col = rand() % COLUMNS;
+            if(note.pos.col == 0){
+                note.key = 'A';
+                note.color = GREEN;
+            } else if(note.pos.col == 1){
+                note.key = 'S';
+                note.color = RED;
+            } else if(note.pos.col == 2){
+                note.key = 'J';
+                note.color = YELLOW;
+            } else if(note.pos.col == 3){
+                note.key = 'K';
+                note.color = BLUE;
+            } else{
+                note.key = 'L';
+                note.color = ORANGE;
+            }
+            continue;
+        } else{
+            note.pos.lin++;
+        }
+
+        Sleep(NOTE_DELAY);
+    }
 }
 
-void game(TNote note){
-    printf("  _________________\n");
+void printGame(TNote note){
+    printf("  %s_______\n", BLACK);  
     for(int i = 0; i < 20; i++){
         for(int j = 0; j < COLUMNS; j++){
             if (i == note.pos.lin && j == note.pos.col && i != 10){
-                printf("  %c ", note.key);
+                printf("  %s%c%s ", note.color, note.key, BLACK);
             } else if(i == 10 && j == 0){
                 if(note.pos.lin == 10 && note.pos.col == 0){
-                    printf("  %c___|___|___|___|", note.key);
+                    printf("  %s%c%s__%s|%s_%s|%s_%s|%s__%s|%s", note.color ,note.key, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
                 } else if(note.pos.lin == 10 && note.pos.col == 1){
-                    printf("  |___%c___|___|___|", note.key);
+                    printf("  %s|%s__%s%c%s_%s|%s_%s|%s__%s|%s", GREEN, BLACK, note.color, note.key, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
                 } else if(note.pos.lin == 10 && note.pos.col == 2){
-                    printf("  |___|___%c___|___|", note.key);
+                    printf("  %s|%s__%s|%s_%s%c%s_%s|%s__%s|%s", GREEN, BLACK, RED, BLACK, note.color, note.key, BLACK, BLUE, BLACK, ORANGE, BLACK);
                 } else if(note.pos.lin == 10 && note.pos.col == 3){
-                    printf("  |___|___|___%c___|", note.key);
+                    printf("  %s|%s__%s|%s_%s|%s_%s%c%s__%s|%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, note.color, note.key, BLACK, ORANGE, BLACK);
                 } else if(note.pos.lin == 10 && note.pos.col == 4){
-                    printf("  |___|___|___|___%c", note.key);
+                    printf("  %s|%s__%s|%s_%s|%s_%s|%s__%s%c%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, note.color, note.key, BLACK);
                 } else{
-                    printf("  |___|___|___|___|");
+                    printf("  %s|%s__%s|%s_%s|%s_%s|%s__%s|%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
                 }
             } else if(i != 10){
-                printf("  | ");
+                printf("  %s| ", BLACK);
             }
         }
         printf("\n");
     }
+
+    printf(RESET);
+    displayScore();
+}
+
+void displayScore(){
+    printf("\nScore: %d | Combo: x%d", score, combo);
+    if(combo > 10){
+        printf("🔥🔥🔥");
+    }
+    printf("\n");
 }
 
 void showRecords(){
-    printf("--- Records ---\n");
+    printf("      --- Records ---\n");
     printf("(Function not implemented yet)\n\n");
     SPAUSE
 }
@@ -149,16 +227,16 @@ void showRanking(){
 }
 
 void start(){
-    char *start_messages[3] = {"Connecting amplifiers", "Adjusting volume", "Tuning the guitar"};
+    const char *start_messages[3] = {"Connecting amplifiers", "Adjusting volume", "Tuning the guitar"};
     printf("%s...\n", start_messages[rand()%3]);
     for(int i = 0; i <= 50; i++){
         int percent = (i * 100) / 50;
 
         printf("\r[");
         for(int j = 0; j < 50; j++){
-            if (j < i){
+            if(j < i){
                 printf("#");
-            } else {
+            } else{
                 printf(" ");
             }
         }
@@ -167,7 +245,9 @@ void start(){
         fflush(stdout);
         Sleep(50);
     }
+    printf(" Ready!");
     sleep(1);
+
     CLS
     title("-- Guitar Hero --");
 }
@@ -177,25 +257,16 @@ void title(char *title){
         printf("%c", title[i]);
         Sleep(100);
     }
-    printf("\n");
+    Sleep(500);
 }
 
 void exitGame(){
     char *exit_messages[3] = {"Saving the setlist", "Packing the gear", "Turning off the amps"};
     printf("%s", exit_messages[rand()%3]);
     for(int i = 0; i < 3; i++){
-        printf(".");
         Sleep(500);
+        printf(".");
     }
-}
 
-int catchKey(){
-    char choice;
-    int op;
-
-    choice = getch();
-    fflush(stdin);
-    op = atoi(&choice);
-
-    return op;
+    exit(0);
 }
