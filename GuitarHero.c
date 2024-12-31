@@ -45,7 +45,6 @@ typedef struct{
 TPlayer *_players; // Array of players
 int _numPlayers = 0; // Number of players
 int currentID = 0; // Current player index
-int maxCombo = 0; // Max combo of the game
 
 /* Functions declarations */
 void menu(); // Show main menu
@@ -121,7 +120,6 @@ void option(char op){
 
 void play(){
     TNote note;
-    int score = 0;
 
     int combo = 0;
     note.pos.lin = 0;
@@ -147,16 +145,16 @@ void play(){
     while(1){
         CLS
         printGame(note);
-        displayScore(score, combo);
+        displayScore(_players[currentID].score, combo);
 
         int check = 0;
         if(kbhit()){ // Check if a key is pressed
             char pressed = getch();
-            if(toupper(pressed) == note.key && note.pos.lin == 11){
-                score += 10;
+           if(toupper(pressed) == note.key && note.pos.lin == 11){
+                _players[currentID].score += 10;
                 combo++;
-                if(combo > maxCombo){
-                    maxCombo = combo;
+                if(combo > _players[currentID].maxCombo){
+                    _players[currentID].maxCombo = combo;
                 }
             } else{
                 combo = 0;
@@ -194,9 +192,6 @@ void play(){
 
         Sleep(NOTE_DELAY);
     }
-
-    _players[currentID].score = score;
-    _players[currentID].maxCombo = maxCombo;
 }
 
 void printGame(TNote note){
@@ -256,7 +251,7 @@ void showRanking(){
 
     printf("\t--- Ranking ---\n");
     for(int i = 0; i < _numPlayers; i++){
-        printf("%d - %s [%d Points | Max combo: x%d]\n", i + 1, _players[i].name, _players[i].score, _players[i].maxCombo);
+        printf("%d - %s [%-3d Points | Max combo: x%.2d]\n", i + 1, _players[i].name, _players[i].score, _players[i].maxCombo);
     }
 
     printf("\n");    
@@ -330,6 +325,7 @@ void selectPlayer(){
         }
         printf("\n** Select the player: ");
         scanf("%d", &id);
+        fflush(stdin);
 
         if(id < 1 || id > _numPlayers){
             errorMessage(-4);
@@ -391,7 +387,7 @@ void saveGame(){
     char *spin[4] = {"|", "/", "-", "\\"};
     int i = 0;
 
-    for(int j = 0; j < 20; j++){
+    for(int j = 0; j < 10; j++){
         printf("\r%s Saving...", spin[i]);
         fflush(stdout);
         Sleep(300);
@@ -407,8 +403,8 @@ void saveGame(){
         fprintf(gameFile, "%s;", _players[i].name);
         fprintf(gameFile, "%d;", _players[i].score);
         fprintf(gameFile, "%d;", _players[i].maxCombo);
+        fprintf(gameFile, "\n");
     }
-    fprintf(gameFile, "\n");
 
     fclose(gameFile);
 
