@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <windows.h>
 #include <unistd.h>
@@ -34,9 +35,17 @@ typedef struct{
     TPosition pos; // Position of the note
 } TNote;
 
+typedef struct{
+    char *name; // Player name
+    int score; // Player score
+    int maxCombo; // Player max combo
+} TPlayer;
+
 /* Global variables */
-int score = 0; // Score variable
-int combo = 0; // Combo variable
+TPlayer *_players; // Array of players
+int _numPlayers = 0; // Number of players
+int currentID = 0; // Current player index
+int maxCombo = 0; // Max combo of the game
 
 /* Functions declarations */
 void menu(); // Show main menu
@@ -48,7 +57,15 @@ void showRecords(); // Show player records
 void showRanking(); // Show players rankings
 void printGame(TNote note); // Game logic
 void exitGame(); // Exit the game
-void displayScore(); // Display current score
+void displayScore(int score, int combo); // Display current score
+void addPlayer(); // Triggers the function to create a player
+void selectPlayer(); // Select a existing player
+TPlayer createPlayer(); // Create new player
+void validateAllocation(void *ptr); // Validate memory allocation
+void freeMemory(); // Free memory
+void saveGame(); // Save game in a file
+void loadGame(); // Load game from a file
+void errorMessage(int errorCode); // Show error message
 
 int main(){
     char op;
@@ -73,7 +90,8 @@ void menu(){
     printf("1. Play\n");
     printf("2. Records\n");
     printf("3. Ranking\n");
-    printf("4. Exit\n\n");
+    printf("4. Save\n");
+    printf("5. Exit\n\n");
     printf("** Enter your choice: ");
 }
 
@@ -90,19 +108,22 @@ void option(char op){
             showRanking();
             break;
         case '4':
+            saveGame();
+            break;
+        case '5':
             exitGame();
             break;
         default:
-            printf("Option not found. Try again!\n\n");
+            errorMessage(-5);
             SPAUSE
     }
 }
 
 void play(){
     TNote note;
-    int check;
+    int score = 0;
 
-    combo = 0;
+    int combo = 0;
     note.pos.lin = 0;
     note.pos.col = rand() % COLUMNS;
 
@@ -126,13 +147,17 @@ void play(){
     while(1){
         CLS
         printGame(note);
+        displayScore(score, combo);
 
-        check = 0;
+        int check = 0;
         if(kbhit()){ // Check if a key is pressed
             char pressed = getch();
             if(toupper(pressed) == note.key && note.pos.lin == 11){
                 score += 10;
                 combo++;
+                if(combo > maxCombo){
+                    maxCombo = combo;
+                }
             } else{
                 combo = 0;
             }
@@ -169,27 +194,30 @@ void play(){
 
         Sleep(NOTE_DELAY);
     }
+
+    _players[currentID].score = score;
+    _players[currentID].maxCombo = maxCombo;
 }
 
 void printGame(TNote note){
-    printf("  %s_______\n", BLACK);  
+    printf("  %s_________________\n", BLACK);  
     for(int i = 0; i < 20; i++){
         for(int j = 0; j < COLUMNS; j++){
             if (i == note.pos.lin && j == note.pos.col && i != 10){
                 printf("  %s%c%s ", note.color, note.key, BLACK);
             } else if(i == 10 && j == 0){
                 if(note.pos.lin == 10 && note.pos.col == 0){
-                    printf("  %s%c%s__%s|%s_%s|%s_%s|%s__%s|%s", note.color ,note.key, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
+                    printf("  %s%c%s___%s|%s___%s|%s___%s|%s___%s|%s", note.color ,note.key, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
                 } else if(note.pos.lin == 10 && note.pos.col == 1){
-                    printf("  %s|%s__%s%c%s_%s|%s_%s|%s__%s|%s", GREEN, BLACK, note.color, note.key, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
+                    printf("  %s|%s___%s%c%s___%s|%s___%s|%s___%s|%s", GREEN, BLACK, note.color, note.key, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
                 } else if(note.pos.lin == 10 && note.pos.col == 2){
-                    printf("  %s|%s__%s|%s_%s%c%s_%s|%s__%s|%s", GREEN, BLACK, RED, BLACK, note.color, note.key, BLACK, BLUE, BLACK, ORANGE, BLACK);
+                    printf("  %s|%s___%s|%s___%s%c%s___%s|%s___%s|%s", GREEN, BLACK, RED, BLACK, note.color, note.key, BLACK, BLUE, BLACK, ORANGE, BLACK);
                 } else if(note.pos.lin == 10 && note.pos.col == 3){
-                    printf("  %s|%s__%s|%s_%s|%s_%s%c%s__%s|%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, note.color, note.key, BLACK, ORANGE, BLACK);
+                    printf("  %s|%s___%s|%s___%s|%s___%s%c%s___%s|%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, note.color, note.key, BLACK, ORANGE, BLACK);
                 } else if(note.pos.lin == 10 && note.pos.col == 4){
-                    printf("  %s|%s__%s|%s_%s|%s_%s|%s__%s%c%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, note.color, note.key, BLACK);
+                    printf("  %s|%s___%s|%s___%s|%s___%s|%s___%s%c%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, note.color, note.key, BLACK);
                 } else{
-                    printf("  %s|%s__%s|%s_%s|%s_%s|%s__%s|%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
+                    printf("  %s|%s___%s|%s___%s|%s___%s|%s___%s|%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
                 }
             } else if(i != 10){
                 printf("  %s| ", BLACK);
@@ -199,30 +227,39 @@ void printGame(TNote note){
     }
 
     printf(RESET);
-    displayScore();
 }
 
-void displayScore(){
+void displayScore(int score, int combo){
     printf("\nScore: %d | Combo: x%d", score, combo);
-    if(combo > 10){
+    if(combo >= 10){
         printf("🔥🔥🔥");
     }
     printf("\n");
 }
 
 void showRecords(){
-    printf("      --- Records ---\n");
-    printf("(Function not implemented yet)\n\n");
+    printf("        --- Records ---\n");
+    printf("Player: %s | Score: %d | Max combo: x%d🔥\n\n", _players[currentID].name, _players[currentID].score, _players[currentID].maxCombo);
     SPAUSE
 }
 
 void showRanking(){
+    for(int i = 0; i < _numPlayers - 1; i++){
+        for(int j = 0; j < _numPlayers - 1 - i; j++){
+            if(_players[j].score < _players[j + 1].score || (_players[j].score == _players[j + 1].score && _players[j].maxCombo < _players[j + 1].maxCombo)){                
+                TPlayer temp = _players[j];
+                _players[j] = _players[j + 1];
+                _players[j + 1] = temp;
+            }
+        }
+    }
+
     printf("\t--- Ranking ---\n");
-    printf("1 - 6PedrinGameplays9 [500 points]\n");
-    printf("2 - Beniio_reidelas69 [460 points]\n");
-    printf("3 - NeutronJimmy_2009 [300 points]\n");
-    printf("4 - Gaybriels101Negao [290 points]\n");
-    printf("5 - LittleMilkinho123 [10 points]\n\n");
+    for(int i = 0; i < _numPlayers; i++){
+        printf("%d - %s [%d Points | Max combo: x%d]\n", i + 1, _players[i].name, _players[i].score, _players[i].maxCombo);
+    }
+
+    printf("\n");    
     SPAUSE
 }
 
@@ -249,10 +286,87 @@ void start(){
     sleep(1);
 
     CLS
+    loadGame();
+    addPlayer();
+
     title("-- Guitar Hero --");
 }
 
+void addPlayer(){
+    char choice = '0';
+
+    while(choice != '1' && choice != '2' && _numPlayers > 0){
+        printf("1. Select a existing player\n");
+        printf("2. Add a new player\n\n");
+        printf("** Enter your choice: ");
+        choice = getch();
+    }
+
+    if(choice == '1'){
+        selectPlayer();
+        return;
+    }
+
+    if(_numPlayers == 0){
+        _players = (TPlayer*)malloc(1 * sizeof(TPlayer));
+    } else{
+        _players = (TPlayer*)realloc(_players, (_numPlayers + 1) * sizeof(TPlayer));
+    }
+    validateAllocation(_players);
+
+    currentID = _numPlayers;
+    _players[_numPlayers] = createPlayer();
+    _numPlayers++;
+}
+
+void selectPlayer(){
+    int id;
+
+    do{
+        CLS
+        printf("--- Players ---\n");
+        for(int i = 0; i < _numPlayers; i++){
+            printf("[%d - %s]\n", i + 1, _players[i].name);
+        }
+        printf("\n** Select the player: ");
+        scanf("%d", &id);
+
+        if(id < 1 || id > _numPlayers){
+            errorMessage(-4);
+        }
+    } while(id < 1 || id > _numPlayers);
+    currentID = id - 1;
+}
+
+TPlayer createPlayer(){
+    char strAux[50];
+    TPlayer player;
+
+    CLS
+    printf("Enter your name: ");
+    gets(strAux);
+
+    if(_numPlayers > 0){
+        for(int i = 0; i < _numPlayers; i++){
+            if(strcmp(_players[i].name, strAux) == 0){
+                errorMessage(-3);
+                return createPlayer();
+            }
+        }
+    }
+
+    player.name = (char*)malloc((strlen(strAux) + 1) * sizeof(char));
+    validateAllocation(player.name);
+    strcpy(player.name, strAux);
+
+    player.score = 0;
+    player.maxCombo = 0;
+
+    return player;
+}
+
 void title(char *title){
+    CLS
     for(int i = 0; title[i] != '\0'; i++){
         printf("%c", title[i]);
         Sleep(100);
@@ -262,11 +376,125 @@ void title(char *title){
 
 void exitGame(){
     char *exit_messages[3] = {"Saving the setlist", "Packing the gear", "Turning off the amps"};
+
     printf("%s", exit_messages[rand()%3]);
     for(int i = 0; i < 3; i++){
         Sleep(500);
         printf(".");
     }
 
+    freeMemory();
     exit(0);
+}
+
+void saveGame(){
+    char *spin[4] = {"|", "/", "-", "\\"};
+    int i = 0;
+
+    for(int j = 0; j < 20; j++){
+        printf("\r%s Saving...", spin[i]);
+        fflush(stdout);
+        Sleep(300);
+        i = (i + 1) % 4;
+    }
+
+    FILE *gameFile = fopen("GuitarHero.txt", "w");
+    if(gameFile == NULL){
+        errorMessage(-2);
+    }
+
+    for(int i = 0; i < _numPlayers; i++){
+        fprintf(gameFile, "%s;", _players[i].name);
+        fprintf(gameFile, "%d;", _players[i].score);
+        fprintf(gameFile, "%d;", _players[i].maxCombo);
+    }
+    fprintf(gameFile, "\n");
+
+    fclose(gameFile);
+
+    CLS
+    printf("Game saved successfully!\n");
+    SPAUSE
+}
+
+void loadGame(){
+    int sep, i;
+    char strAux[100], c;
+
+    FILE *gameFile = fopen("GuitarHero.txt", "r");
+    if(gameFile){
+        i = 0;
+        sep = 0;
+
+        while (!feof(gameFile)){
+            c = fgetc(gameFile);
+            if(c != ';' && c != '\n' && c != EOF){
+                strAux[i] = c;
+                i++;
+            } else if(c == ';' || c == '\n' || c == EOF){
+                strAux[i] = '\0';
+                i = 0;
+
+                if(c == ';'){
+                    if(sep == 0){
+                        if(_numPlayers == 0){
+                            _players = (TPlayer*)malloc(1 * sizeof(TPlayer));
+                        } else{
+                            _players = (TPlayer*)realloc(_players, (_numPlayers + 1) * sizeof(TPlayer));
+                        }
+                        validateAllocation(_players);
+
+                        _players[_numPlayers].name = (char*)malloc((strlen(strAux) + 1) * sizeof(char));
+                        validateAllocation(_players[_numPlayers].name);
+                        strcpy(_players[_numPlayers].name, strAux);
+                        sep++;
+                    } else if(sep == 1){
+                        _players[_numPlayers].score = atoi(strAux);
+                        sep++;
+                    } else if(sep == 2){
+                        _players[_numPlayers].maxCombo = atoi(strAux);
+                        sep = 0;
+                        _numPlayers++;
+                    }
+                }
+            }
+        }
+    }
+
+    fclose(gameFile);
+}
+
+void freeMemory(){
+    for(int i = 0; i < _numPlayers; i++){
+        free(_players[i].name);
+    }
+    free(_players);
+}
+
+void validateAllocation(void *ptr){
+    if(ptr == NULL){
+        errorMessage(-1);
+    }
+}
+
+void errorMessage(int errorCode){
+    switch(errorCode){
+        case -1:
+            printf("\nFATAL ERROR: Memory allocation failed!!!\n");
+            exit(1);
+        case -2:
+            printf("\nFATAL ERROR: File creation failed!!!\n");
+            exit(1);
+        case -3:
+            printf("\nERROR: Player already exists!!!\n");
+            break;
+        case -4:
+            printf("\nERROR: Player does not exist!!!\n");
+            break;
+        case -5:
+            printf("\nERROR: Option not found!!!\n");
+            break;
+    }
+
+    SPAUSE
 }
