@@ -330,6 +330,7 @@ void selectPlayer(){
         }
         printf("\n** Select the player: ");
         scanf("%d", &id);
+        fflush(stdin);
 
         if(id < 1 || id > _numPlayers){
             errorMessage(-4);
