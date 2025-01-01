@@ -8,10 +8,8 @@
 #include <ctype.h>
 
 /* Constants definitions */
-#define NOTE_COUNT 4
-#define LINES 20
+#define LINES 16
 #define COLUMNS 5
-#define NOTE_DELAY 300
 #define PAUSE getch();
 #define CLS printf("\033[2J\033[1;1H");
 #define SPAUSE printf("Press any key to continue. . ."); PAUSE
@@ -45,6 +43,7 @@ typedef struct{
 TPlayer *_players; // Array of players
 int _numPlayers = 0; // Number of players
 int currentID = 0; // Current player index
+int record = 0; // Player record
 
 /* Functions declarations */
 void menu(); // Show main menu
@@ -120,6 +119,30 @@ void option(char op){
 
 void play(){
     TNote note;
+    int delay;
+
+    int dif = 0;
+    while(dif < 1 || dif > 3){
+        printf("Set difficulty:\n");
+        printf("1. Cry baby👶\n");
+        printf("2. Normal😐\n");
+        printf("3. Rock 'n' Roll🤘\n\n");
+        printf("** Enter your choice: ");
+        scanf("%d", &dif);
+
+        if(dif < 1 || dif > 3){
+            errorMessage(-5);
+        }
+        CLS
+    }
+
+    if(dif == 1){
+        delay = 500;
+    } else if(dif == 2){
+        delay = 300;
+    } else if(dif == 3){
+        delay = 200;
+    }
 
     int combo = 0;
     note.pos.lin = 0;
@@ -150,11 +173,12 @@ void play(){
         int check = 0;
         if(kbhit()){ // Check if a key is pressed
             char pressed = getch();
-           if(toupper(pressed) == note.key && note.pos.lin == 11){
+           if(toupper(pressed) == note.key && note.pos.lin == (LINES / 2) + 1){
                 _players[currentID].score += 10;
                 combo++;
                 if(combo > _players[currentID].maxCombo){
                     _players[currentID].maxCombo = combo;
+                    record = 1;
                 }
             } else{
                 combo = 0;
@@ -190,31 +214,31 @@ void play(){
             note.pos.lin++;
         }
 
-        Sleep(NOTE_DELAY);
+        Sleep(delay);
     }
 }
 
 void printGame(TNote note){
     printf("  %s_________________\n", BLACK);  
-    for(int i = 0; i < 20; i++){
+    for(int i = 0; i < LINES; i++){
         for(int j = 0; j < COLUMNS; j++){
-            if (i == note.pos.lin && j == note.pos.col && i != 10){
+            if (i == note.pos.lin && j == note.pos.col && i != (LINES / 2)){
                 printf("  %s%c%s ", note.color, note.key, BLACK);
-            } else if(i == 10 && j == 0){
-                if(note.pos.lin == 10 && note.pos.col == 0){
+            } else if(i == (LINES / 2) && j == 0){
+                if(note.pos.lin == (LINES / 2) && note.pos.col == 0){
                     printf("  %s%c%s___%s|%s___%s|%s___%s|%s___%s|%s", note.color ,note.key, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
-                } else if(note.pos.lin == 10 && note.pos.col == 1){
+                } else if(note.pos.lin == (LINES / 2) && note.pos.col == 1){
                     printf("  %s|%s___%s%c%s___%s|%s___%s|%s___%s|%s", GREEN, BLACK, note.color, note.key, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
-                } else if(note.pos.lin == 10 && note.pos.col == 2){
+                } else if(note.pos.lin == (LINES / 2) && note.pos.col == 2){
                     printf("  %s|%s___%s|%s___%s%c%s___%s|%s___%s|%s", GREEN, BLACK, RED, BLACK, note.color, note.key, BLACK, BLUE, BLACK, ORANGE, BLACK);
-                } else if(note.pos.lin == 10 && note.pos.col == 3){
+                } else if(note.pos.lin == (LINES / 2) && note.pos.col == 3){
                     printf("  %s|%s___%s|%s___%s|%s___%s%c%s___%s|%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, note.color, note.key, BLACK, ORANGE, BLACK);
-                } else if(note.pos.lin == 10 && note.pos.col == 4){
+                } else if(note.pos.lin == (LINES / 2) && note.pos.col == 4){
                     printf("  %s|%s___%s|%s___%s|%s___%s|%s___%s%c%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, note.color, note.key, BLACK);
                 } else{
                     printf("  %s|%s___%s|%s___%s|%s___%s|%s___%s|%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
                 }
-            } else if(i != 10){
+            } else if(i != (LINES / 2)){
                 printf("  %s| ", BLACK);
             }
         }
@@ -233,6 +257,17 @@ void displayScore(int score, int combo){
 }
 
 void showRecords(){
+    char *explosion[4] = {"@", "*", ".", " "};
+    if(record == 1){
+        for(int i = 0; i < 4; i++){
+            printf("%s%s NEW %sRECORD %s\n", RED, explosion[i], YELLOW, explosion[i]);
+            Sleep(500);
+            CLS
+        }
+        printf(RESET);
+        record = 0;
+    }
+
     printf("        --- Records ---\n");
     printf("Player: %s | Score: %d | Max combo: x%d🔥\n\n", _players[currentID].name, _players[currentID].score, _players[currentID].maxCombo);
     SPAUSE
@@ -249,9 +284,15 @@ void showRanking(){
         }
     }
 
-    printf("\t--- Ranking ---\n");
+    printf("      --- Ranking ---\n");
     for(int i = 0; i < _numPlayers; i++){
-        printf("%d - %s [%-3d Points | Max combo: x%.2d]\n", i + 1, _players[i].name, _players[i].score, _players[i].maxCombo);
+        if(i == 0){
+            printf("%s%d%s - %s [%-3d Points | Max combo: x%.2d]🔥\n", YELLOW, i + 1, RESET, _players[i].name, _players[i].score, _players[i].maxCombo);
+        } else if(i == _numPlayers - 1){
+            printf("%s%d%s - %s [%-3d Points | Max combo: x%.2d]👎\n", RED, i + 1, RESET, _players[i].name, _players[i].score, _players[i].maxCombo);
+        }else{
+            printf("%d - %s [%-3d Points | Max combo: x%.2d]\n", i + 1, _players[i].name, _players[i].score, _players[i].maxCombo);
+        }
     }
 
     printf("\n");    
