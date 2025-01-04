@@ -8,10 +8,9 @@
 #include <ctype.h>
 
 /* Constants definitions */
-#define LINES 16
 #define COLUMNS 5
 #define PAUSE getch();
-#define CLS printf("\033[2J\033[1;1H");
+#define CLS (_WIN32 ? system("cls") : system("clear"));
 #define SPAUSE printf("Press any key to continue. . ."); PAUSE
 #define RED "\033[31m"
 #define GREEN "\033[32m"
@@ -44,6 +43,7 @@ TPlayer *_players; // Array of players
 int _numPlayers = 0; // Number of players
 int currentID = 0; // Current player index
 int record = 0; // Player record
+int lines = 16;
 
 /* Functions declarations */
 void menu(); // Show main menu
@@ -59,6 +59,10 @@ void displayScore(int score, int combo); // Display current score
 void addPlayer(); // Triggers the function to create a player
 void selectPlayer(); // Select a existing player
 TPlayer createPlayer(); // Create new player
+void deletePlayer(); // Delete a player
+void changePoints(); // Change points and combo
+void changeGuitarSize(); // Change the number of lines of the guitar
+void developerMode(); // Developer mode
 void validateAllocation(void *ptr); // Validate memory allocation
 void freeMemory(); // Free memory
 void saveGame(); // Save game in a file
@@ -110,6 +114,9 @@ void option(char op){
             break;
         case '5':
             exitGame();
+            break;
+        case 'g':
+            developerMode();
             break;
         default:
             errorMessage(-5);
@@ -173,7 +180,7 @@ void play(){
         int check = 0;
         if(kbhit()){ // Check if a key is pressed
             char pressed = getch();
-           if(toupper(pressed) == note.key && note.pos.lin == (LINES / 2) + 1){
+           if(toupper(pressed) == note.key && note.pos.lin == (lines / 2) + 1){
                 _players[currentID].score += 10;
                 combo++;
                 if(combo > _players[currentID].maxCombo){
@@ -186,7 +193,7 @@ void play(){
             check = 1;
         }
 
-        if(note.pos.lin >= LINES){
+        if(note.pos.lin >= lines){
             break;
         }
 
@@ -220,25 +227,25 @@ void play(){
 
 void printGame(TNote note){
     printf("  %s_________________\n", BLACK);  
-    for(int i = 0; i < LINES; i++){
+    for(int i = 0; i < lines; i++){
         for(int j = 0; j < COLUMNS; j++){
-            if (i == note.pos.lin && j == note.pos.col && i != (LINES / 2)){
+            if (i == note.pos.lin && j == note.pos.col && i != (lines / 2)){
                 printf("  %s%c%s ", note.color, note.key, BLACK);
-            } else if(i == (LINES / 2) && j == 0){
-                if(note.pos.lin == (LINES / 2) && note.pos.col == 0){
+            } else if(i == (lines / 2) && j == 0){
+                if(note.pos.lin == (lines / 2) && note.pos.col == 0){
                     printf("  %s%c%s___%s|%s___%s|%s___%s|%s___%s|%s", note.color ,note.key, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
-                } else if(note.pos.lin == (LINES / 2) && note.pos.col == 1){
+                } else if(note.pos.lin == (lines / 2) && note.pos.col == 1){
                     printf("  %s|%s___%s%c%s___%s|%s___%s|%s___%s|%s", GREEN, BLACK, note.color, note.key, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
-                } else if(note.pos.lin == (LINES / 2) && note.pos.col == 2){
+                } else if(note.pos.lin == (lines / 2) && note.pos.col == 2){
                     printf("  %s|%s___%s|%s___%s%c%s___%s|%s___%s|%s", GREEN, BLACK, RED, BLACK, note.color, note.key, BLACK, BLUE, BLACK, ORANGE, BLACK);
-                } else if(note.pos.lin == (LINES / 2) && note.pos.col == 3){
+                } else if(note.pos.lin == (lines / 2) && note.pos.col == 3){
                     printf("  %s|%s___%s|%s___%s|%s___%s%c%s___%s|%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, note.color, note.key, BLACK, ORANGE, BLACK);
-                } else if(note.pos.lin == (LINES / 2) && note.pos.col == 4){
+                } else if(note.pos.lin == (lines / 2) && note.pos.col == 4){
                     printf("  %s|%s___%s|%s___%s|%s___%s|%s___%s%c%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, note.color, note.key, BLACK);
                 } else{
                     printf("  %s|%s___%s|%s___%s|%s___%s|%s___%s|%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
                 }
-            } else if(i != (LINES / 2)){
+            } else if(i != (lines / 2)){
                 printf("  %s| ", BLACK);
             }
         }
@@ -323,12 +330,7 @@ void start(){
 
     CLS
     loadGame();
-    addPlayer();
 
-    title("-- Guitar Hero --");
-}
-
-void addPlayer(){
     char choice = '0';
 
     while(choice != '1' && choice != '2' && _numPlayers > 0){
@@ -340,9 +342,14 @@ void addPlayer(){
 
     if(choice == '1'){
         selectPlayer();
-        return;
+    } else if(choice == '2'){
+        addPlayer();
     }
 
+    title("-- Guitar Hero --");
+}
+
+void addPlayer(){
     if(_numPlayers == 0){
         _players = (TPlayer*)malloc(1 * sizeof(TPlayer));
     } else{
@@ -401,6 +408,134 @@ TPlayer createPlayer(){
 
     return player;
 }
+
+void deletePlayer(){
+    int id, check = 0;
+
+    do{
+        CLS
+        printf("--- Players ---\n");
+        for(int i = 0; i < _numPlayers; i++){
+            printf("[%d - %s]\n", i + 1, _players[i].name);
+        }
+        printf("\n** Select the player: ");
+        scanf("%d", &id);
+        fflush(stdin);
+
+        if(id == currentID){
+            check = 1;
+        }
+
+        if(id < 1 || id > _numPlayers){
+            errorMessage(-4);
+        }
+    } while(id < 1 || id > _numPlayers);
+
+    for(int i = id - 1; i < _numPlayers - 1; i++){
+        _players[i] = _players[i + 1];
+    }
+
+    _players = (TPlayer*)realloc(_players, (_numPlayers - 1) * sizeof(TPlayer));
+    _numPlayers--;
+
+
+    CLS
+    printf("Player deleted!\n");
+    SPAUSE
+
+    if(check){
+        selectPlayer();
+    }
+}
+
+void changePoints(){
+    int points, combo, id;
+
+    do{
+        CLS
+        printf("--- Players ---\n");
+        for(int i = 0; i < _numPlayers; i++){
+            printf("[%d - %s]\n", i + 1, _players[i].name);
+        }
+        printf("\n** Select the player: ");
+        scanf("%d", &id);
+        fflush(stdin);
+
+        if(id < 1 || id > _numPlayers){
+            errorMessage(-4);
+        }
+    } while(id < 1 || id > _numPlayers);
+    id--;
+
+    CLS
+    printf("Current points: %d\n", _players[id].score);
+    printf("New points: ");
+    scanf("%d", &points);
+    fflush(stdin);
+
+    CLS
+    printf("Current combo: %d\n", _players[id].maxCombo);    
+    printf("New combo: ");
+    scanf("%d", &combo);
+    fflush(stdin);
+
+    _players[id].score = points;
+    _players[id].maxCombo = combo;
+
+    CLS
+    printf("Points and combo changed!\n");
+    SPAUSE
+}
+
+void changeGuitarSize(){
+
+    do{
+        CLS
+        printf("Current guitar size: %d\n", lines);
+        printf("New guitar size: ");
+        scanf("%d", &lines);
+        fflush(stdin);
+
+        if(lines < 1){
+            errorMessage(-6);
+        }
+    } while(lines < 1);
+
+    CLS
+    printf("Guitar size changed!\n");
+    SPAUSE
+}
+
+void developerMode(){
+    char op;
+
+    while(1){
+        CLS
+        printf("1. Add a new player\n");
+        printf("2. Delete a player\n");
+        printf("3. Change points and combo\n");
+        printf("4. Change guitar size\n");
+        printf("5. Exit\n\n");
+        printf("** Enter your choice: ");
+        op = getch();
+
+        if(op == '1'){
+            addPlayer();
+        } else if(op == '2'){
+            deletePlayer();
+        } else if(op == '3'){
+            changePoints();
+        } else if(op == '4'){
+            changeGuitarSize();
+        } else if(op == '5'){
+            break;
+        } else if(op == 'g'){
+            printf("Not so fast\n");
+        } else{
+            errorMessage(-5);
+        }
+    }
+}   
 
 void title(char *title){
     CLS
@@ -530,6 +665,12 @@ void errorMessage(int errorCode){
             break;
         case -5:
             printf("\nERROR: Option not found!!!\n");
+            break;
+        case -6:
+            printf("\nERROR: Negative lines not allowed!!!\n");
+            break;
+        default:
+            printf("\nERROR: Unknown error!!!\n");
             break;
     }
 
