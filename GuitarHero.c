@@ -17,7 +17,7 @@
 #define YELLOW "\033[33m"
 #define BLUE "\033[34m"
 #define RESET "\033[0m"
-#define BLACK "\033[30m"
+#define BLACK "\033[0m"
 #define ORANGE "\033[38;5;202m"
 
 /* Struct definitions */
@@ -52,6 +52,7 @@ void title(char *title); // Type the title: "Guitar Hero"
 void option(char op); // Choose option
 void play(); // Play the game
 void showRecords(); // Show player records
+void sortPlayers(); // Sort players
 void showRanking(); // Show players rankings
 void printGame(TNote note); // Game logic
 void exitGame(); // Exit the game
@@ -68,6 +69,8 @@ void freeMemory(); // Free memory
 void saveGame(); // Save game in a file
 void loadGame(); // Load game from a file
 void errorMessage(int errorCode); // Show error message
+int isDigitString(char *str); // Verify if a string is a digit
+int search(char *str); // Search a player by name
 
 int main(){
     char op;
@@ -120,7 +123,7 @@ void option(char op){
             break;
         default:
             errorMessage(-5);
-            SPAUSE
+            break;
     }
 }
 
@@ -280,7 +283,7 @@ void showRecords(){
     SPAUSE
 }
 
-void showRanking(){
+void sortPlayers(){
     for(int i = 0; i < _numPlayers - 1; i++){
         for(int j = 0; j < _numPlayers - 1 - i; j++){
             if(_players[j].score < _players[j + 1].score || (_players[j].score == _players[j + 1].score && _players[j].maxCombo < _players[j + 1].maxCombo)){                
@@ -290,7 +293,10 @@ void showRanking(){
             }
         }
     }
+}
 
+void showRanking(){
+    sortPlayers();
     printf("      --- Ranking ---\n");
     for(int i = 0; i < _numPlayers; i++){
         if(i == 0){
@@ -364,6 +370,7 @@ void addPlayer(){
 
 void selectPlayer(){
     int id;
+    char str[100];
 
     do{
         CLS
@@ -371,15 +378,44 @@ void selectPlayer(){
         for(int i = 0; i < _numPlayers; i++){
             printf("[%d - %s]\n", i + 1, _players[i].name);
         }
-        printf("\n** Select the player: ");
-        scanf("%d", &id);
-        fflush(stdin);
+        printf("\n** Select the player [by index or name]: ");
+        gets(str);
+        id = isDigitString(str);
 
-        if(id < 1 || id > _numPlayers){
+        if(id < 0 || id > _numPlayers - 1){
             errorMessage(-4);
         }
-    } while(id < 1 || id > _numPlayers);
-    currentID = id - 1;
+    } while(id < 0 || id > _numPlayers - 1);
+    currentID = id;
+}
+
+int isDigitString(char *str)
+{
+    if (isdigit(str[0]) && strlen(str) == 1)
+    {
+        return (atoi(str) - 1);
+    }
+
+    return search(str);
+}
+
+int search(char *str){
+    printf("Searching [%s]", str);
+    for(int i = 0; i < 3; i++){
+        printf(".");
+        Sleep(500);
+    }
+    printf("\n");
+
+    for(int i = 0; i < _numPlayers; i++){
+        if(strcmp(_players[i].name, str) == 0){
+            printf("\nPlayer [%s] found in position %d!\n", _players[i].name, i + 1);
+            sleep(1);
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 TPlayer createPlayer(){
@@ -411,6 +447,7 @@ TPlayer createPlayer(){
 
 void deletePlayer(){
     int id, check = 0;
+    char str[100];
 
     do{
         CLS
@@ -419,19 +456,19 @@ void deletePlayer(){
             printf("[%d - %s]\n", i + 1, _players[i].name);
         }
         printf("\n** Select the player: ");
-        scanf("%d", &id);
-        fflush(stdin);
+        gets(str);
+        id = isDigitString(str);
 
         if(id == currentID){
-            check = 1;
+           check = 1;
         }
 
-        if(id < 1 || id > _numPlayers){
+        if(id < 0 || id > _numPlayers - 1){
             errorMessage(-4);
         }
-    } while(id < 1 || id > _numPlayers);
+    } while(id < 0 || id > _numPlayers - 1);
 
-    for(int i = id - 1; i < _numPlayers - 1; i++){
+    for(int i = id; i < _numPlayers - 1; i++){
         _players[i] = _players[i + 1];
     }
 

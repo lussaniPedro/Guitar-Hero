@@ -1,5 +1,7 @@
-6PedrinGameplays9;500;50;
+mugg;7030;40;
+6PedrinGameplays9;2700;62;
 Beniio_reidelas69;460;46;
 NeutronJimmy_2009;300;28;
 Gaybriels101Negao;290;20;
 LittleMilkinho123;10;1;
+Augusto;0;0;
