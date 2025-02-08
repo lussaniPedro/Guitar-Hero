@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <unistd.h>
 #include <conio.h>
+#include <stdbool.h>
 #include <ctype.h>
 
 /* Constants definitions */
@@ -19,6 +20,11 @@
 #define RESET "\033[0m"
 #define BLACK "\033[0m"
 #define ORANGE "\033[38;5;202m"
+#define NOCURSOR printf("\e[?25l"); // Hide text cursor
+#define CURSOR printf("\e[?25h"); // Show text cursor
+#define UP 72 // Key "up" value
+#define DOWN 80 // Key "down" value
+#define ENTER 13 // Key "Enter" value
 
 /* Struct definitions */
 typedef struct{
@@ -35,7 +41,7 @@ typedef struct{
 typedef struct{
     char *name; // Player name
     int score; // Player score
-    int maxCombo; // Player max combo
+    int maxCombo; // Plint max combo
 } TPlayer;
 
 /* Global variables */
@@ -46,7 +52,7 @@ int record = 0; // Player record
 int lines = 16;
 
 /* Functions declarations */
-void menu(); // Show main menu
+int menu(char **options, int totalOps); // Show interactive menu
 void start(); // Start the game
 void title(char *title); // Type the title: "Guitar Hero"
 void option(char op); // Choose option
@@ -63,25 +69,29 @@ TPlayer createPlayer(); // Create new player
 void deletePlayer(); // Delete a player
 void changePoints(); // Change points and combo
 void changeGuitarSize(); // Change the number of lines of the guitar
-void developerMode(); // Developer mode
+void developerMode(); // Develint mode
 void validateAllocation(void *ptr); // Validate memory allocation
 void freeMemory(); // Free memory
 void saveGame(); // Save game in a file
 void loadGame(); // Load game from a file
-void errorMessage(int errorCode); // Show error message
+void errorMessage(int errorCode); // Show eint message
 int isDigitString(char *str); // Verify if a string is a digit
 int search(char *str); // Search a player by name
+void gotoxy(int x, int y);
 
 int main(){
-    char op;
+    int op;
     srand((unsigned)time(NULL));
     SetConsoleOutputCP(65001);
 
-    CLS
     start();
     while(1){
-        menu();
-        op = getch();
+        char *options[] = {"Play", "Records", "Ranking", "Help", "Save", "Exit"};
+        int numOps = 6;
+        
+        CLS
+        printf("-- Guitar Hero --\n");
+        op = (char)menu(options, numOps);
 
         option(op);
     }
@@ -89,36 +99,62 @@ int main(){
     return 0;
 }
 
-void menu(){
-    CLS
-    printf("-- Guitar Hero --\n");
-    printf("1. Play\n");
-    printf("2. Records\n");
-    printf("3. Ranking\n");
-    printf("4. Save\n");
-    printf("5. Exit\n\n");
-    printf("** Enter your choice: ");
+int menu(char **options, int totalOps){
+    int pos = 0;
+    int key;
+
+    NOCURSOR // Hide cursor
+    while(true){
+        for(int i = 0; i < totalOps; i++){
+            gotoxy(0, 2 + i); // Go to print position X, Y
+
+            if(i == pos){
+                printf(">> %s <<", options[i]); // Selected option
+            } else{
+                printf("   %s   ", options[i]);
+            }
+        }
+        key = getch();
+
+        // Increases or decreases the position according to the selected key
+        if(key == UP && pos > 0)
+            pos--;
+        if(key == DOWN && pos < totalOps - 1)
+            pos++;
+
+        if(key == ENTER){ // Select option
+            CURSOR
+            return pos;
+        } else if(key == 'g'){ // Selected developer mode (dont ask questions)
+            CURSOR
+            return (int)key;
+        }
+    }
 }
 
 void option(char op){
     CLS
     switch(op){
-        case '1':
+        case 0:
             play();
             break;
-        case '2':
+        case 1:
             showRecords();
             break;
-        case '3':
+        case 2:
             showRanking();
             break;
-        case '4':
+        case 3:
+            printf("Not yet implemented\n");
+            SPAUSE
+            break;
+        case 4:    
             saveGame();
             break;
-        case '5':
+        case 5:
             exitGame();
             break;
-        case 'g':
+        case (int)'g': // No comments
             developerMode();
             break;
         default:
@@ -129,29 +165,20 @@ void option(char op){
 
 void play(){
     TNote note;
-    int delay;
+    char *options[] = {"Cry baby👶", "Normal😐", "Rock 'n' Roll🤘", "Back↩️"};
+    int delay, numOps = 4;
 
-    int dif = 0;
-    while(dif < 1 || dif > 3){
-        printf("Set difficulty:\n");
-        printf("1. Cry baby👶\n");
-        printf("2. Normal😐\n");
-        printf("3. Rock 'n' Roll🤘\n\n");
-        printf("** Enter your choice: ");
-        scanf("%d", &dif);
+    printf("Set difficulty:\n");
+    int dif = menu(options, numOps);
 
-        if(dif < 1 || dif > 3){
-            errorMessage(-5);
-        }
-        CLS
-    }
-
-    if(dif == 1){
+    if(dif == 0){
         delay = 500;
-    } else if(dif == 2){
+    } else if(dif == 1){
         delay = 300;
-    } else if(dif == 3){
+    } else if(dif == 2){
         delay = 200;
+    } else if(dif == 3){
+        return;
     }
 
     int combo = 0;
@@ -314,10 +341,13 @@ void showRanking(){
 
 void start(){
     const char *start_messages[3] = {"Connecting amplifiers", "Adjusting volume", "Tuning the guitar"};
+
+    CLS 
+    NOCURSOR
     printf("%s...\n", start_messages[rand()%3]);
     for(int i = 0; i <= 50; i++){
         int percent = (i * 100) / 50;
-
+        
         printf("\r[");
         for(int j = 0; j < 50; j++){
             if(j < i){
@@ -336,9 +366,9 @@ void start(){
 
     CLS
     loadGame();
-
+    
+    CURSOR
     char choice = '0';
-
     while(choice != '1' && choice != '2' && _numPlayers > 0){
         printf("1. Select a existing player\n");
         printf("2. Add a new player\n\n");
@@ -348,7 +378,7 @@ void start(){
 
     if(choice == '1'){
         selectPlayer();
-    } else if(choice == '2'){
+    } else if(choice == '2' || _numPlayers == 0){
         addPlayer();
     }
 
@@ -544,30 +574,29 @@ void changeGuitarSize(){
 }
 
 void developerMode(){
-    char op;
+    char *options[] = {"Add a new player", "Delete a player", "Change points and combo", "Change guitar size", "Exit"};
+    int numOps = 5;
+    int op;
 
     while(1){
+        printf("-- Developer mode --\n");
+        op = menu(options, numOps);
+        
         CLS
-        printf("1. Add a new player\n");
-        printf("2. Delete a player\n");
-        printf("3. Change points and combo\n");
-        printf("4. Change guitar size\n");
-        printf("5. Exit\n\n");
-        printf("** Enter your choice: ");
-        op = getch();
-
-        if(op == '1'){
+        if(op == 0){
             addPlayer();
-        } else if(op == '2'){
+        } else if(op == 1){
             deletePlayer();
-        } else if(op == '3'){
+        } else if(op == 2){
             changePoints();
-        } else if(op == '4'){
+        } else if(op == 3){
             changeGuitarSize();
-        } else if(op == '5'){
+        } else if(op == 4){
             break;
-        } else if(op == 'g'){
-            printf("Not so fast\n");
+        } else if(op == (int)'g'){ // ...
+            printf("Not so fast");
+            sleep(1);
+            CLS
         } else{
             errorMessage(-5);
         }
@@ -712,4 +741,11 @@ void errorMessage(int errorCode){
     }
 
     SPAUSE
+}
+
+void gotoxy(int x, int y){
+    COORD coord;
+    coord.X = x;
+    coord.Y = y;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord); // Windows API to move text cursor
 }
