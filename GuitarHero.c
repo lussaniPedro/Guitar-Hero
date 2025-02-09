@@ -18,13 +18,14 @@
 #define YELLOW "\033[33m"
 #define BLUE "\033[34m"
 #define RESET "\033[0m"
-#define BLACK "\033[0m"
+#define BLACK "\033[30m"
 #define ORANGE "\033[38;5;202m"
 #define NOCURSOR printf("\e[?25l"); // Hide text cursor
 #define CURSOR printf("\e[?25h"); // Show text cursor
 #define UP 72 // Key "up" value
 #define DOWN 80 // Key "down" value
 #define ENTER 13 // Key "Enter" value
+#define ESC 27 // Key "Esc" value
 
 /* Struct definitions */
 typedef struct{
@@ -43,13 +44,6 @@ typedef struct{
     int score; // Player score
     int maxCombo; // Plint max combo
 } TPlayer;
-
-/* Global variables */
-TPlayer *_players; // Array of players
-int _numPlayers = 0; // Number of players
-int currentID = 0; // Current player index
-int record = 0; // Player record
-int lines = 16;
 
 /* Functions declarations */
 int menu(char **options, int totalOps); // Show interactive menu
@@ -77,7 +71,14 @@ void loadGame(); // Load game from a file
 void errorMessage(int errorCode); // Show eint message
 int isDigitString(char *str); // Verify if a string is a digit
 int search(char *str); // Search a player by name
-void gotoxy(int x, int y);
+void gotoxy(int x, int y); // Go to position X, Y (Very useful comment)
+
+/* Global variables */
+TPlayer *_players; // Array of players
+int _numPlayers = 0; // Number of players
+int currentID = 0; // Current player index
+bool newRecord = false; // Player record
+int lines = 16; // Lines of guitar
 
 int main(){
     int op;
@@ -90,7 +91,7 @@ int main(){
         int numOps = 6;
         
         CLS
-        printf("-- Guitar Hero --\n");
+        printf("-- Guitar Hero --");
         op = (char)menu(options, numOps);
 
         option(op);
@@ -125,7 +126,7 @@ int menu(char **options, int totalOps){
         if(key == ENTER){ // Select option
             CURSOR
             return pos;
-        } else if(key == 'g'){ // Selected developer mode (dont ask questions)
+        } else if(key == 'g' || key == ESC){ // Selected developer mode (dont ask questions)
             CURSOR
             return (int)key;
         }
@@ -146,7 +147,7 @@ void option(char op){
             break;
         case 3:
             printf("Not yet implemented\n");
-            SPAUSE
+            sleep(1);
             break;
         case 4:    
             saveGame();
@@ -157,50 +158,32 @@ void option(char op){
         case (int)'g': // No comments
             developerMode();
             break;
-        default:
-            errorMessage(-5);
-            break;
     }
 }
 
 void play(){
     TNote note;
-    char *options[] = {"Cry baby👶", "Normal😐", "Rock 'n' Roll🤘", "Back↩️"};
-    int delay, numOps = 4;
+    char *options[] = {"Cry baby👶", "Normal😐", "Rock 'n' Roll🤘"};
+    int delay, numOps = 3;
 
-    printf("Set difficulty:\n");
+    printf("Set difficulty:");
     int dif = menu(options, numOps);
 
-    if(dif == 0){
-        delay = 500;
-    } else if(dif == 1){
-        delay = 300;
-    } else if(dif == 2){
-        delay = 200;
-    } else if(dif == 3){
-        return;
-    }
+    if(dif == 0) delay = 500;
+    if(dif == 1) delay = 300;
+    if(dif == 2) delay = 200;
+    if(dif == ESC) return;
 
     int combo = 0;
     note.pos.lin = 0;
     note.pos.col = rand() % COLUMNS;
 
-    if(note.pos.col == 0){
-        note.key = 'A';
-        note.color = GREEN;
-    } else if(note.pos.col == 1){
-        note.key = 'S';
-        note.color = RED;
-    } else if(note.pos.col == 2){
-        note.key = 'J';
-        note.color = YELLOW;
-    } else if(note.pos.col == 3){
-        note.key = 'K';
-        note.color = BLUE;
-    } else{
-        note.key = 'L';
-        note.color = ORANGE;
-    }
+    NOCURSOR
+    if(note.pos.col == 0) note.key = 'A'; note.color = GREEN;
+    if(note.pos.col == 1) note.key = 'S'; note.color = RED;
+    if(note.pos.col == 2) note.key = 'J'; note.color = YELLOW;
+    if(note.pos.col == 3) note.key = 'K'; note.color = BLUE;
+    if(note.pos.col == 4) note.key = 'L'; note.color = ORANGE;
 
     while(1){
         CLS
@@ -210,14 +193,17 @@ void play(){
         int check = 0;
         if(kbhit()){ // Check if a key is pressed
             char pressed = getch();
-           if(toupper(pressed) == note.key && note.pos.lin == (lines / 2) + 1){
-                _players[currentID].score += 10;
+           if(toupper(pressed) == note.key && note.pos.lin == (lines / 2)){
+                _players[currentID].score += 5;
                 combo++;
                 if(combo > _players[currentID].maxCombo){
                     _players[currentID].maxCombo = combo;
-                    record = 1;
+                    newRecord = true;
                 }
+            } else if((int)pressed == ESC){
+                return;
             } else{
+                if(_players[currentID].score >= 5) _players[currentID].score -= 5;
                 combo = 0;
             }
             check = 1;
@@ -230,22 +216,13 @@ void play(){
         if(check){
             note.pos.lin = 0;
             note.pos.col = rand() % COLUMNS;
-            if(note.pos.col == 0){
-                note.key = 'A';
-                note.color = GREEN;
-            } else if(note.pos.col == 1){
-                note.key = 'S';
-                note.color = RED;
-            } else if(note.pos.col == 2){
-                note.key = 'J';
-                note.color = YELLOW;
-            } else if(note.pos.col == 3){
-                note.key = 'K';
-                note.color = BLUE;
-            } else{
-                note.key = 'L';
-                note.color = ORANGE;
-            }
+
+            if(note.pos.col == 0) note.key = 'A'; note.color = GREEN;
+            if(note.pos.col == 1) note.key = 'S'; note.color = RED;
+            if(note.pos.col == 2) note.key = 'J'; note.color = YELLOW;
+            if(note.pos.col == 3) note.key = 'K'; note.color = BLUE;
+            if(note.pos.col == 4) note.key = 'L'; note.color = ORANGE;
+
             continue;
         } else{
             note.pos.lin++;
@@ -256,36 +233,40 @@ void play(){
 }
 
 void printGame(TNote note){
-    printf("  %s_________________\n", BLACK);  
-    for(int i = 0; i < lines; i++){
-        for(int j = 0; j < COLUMNS; j++){
-            if (i == note.pos.lin && j == note.pos.col && i != (lines / 2)){
-                printf("  %s%c%s ", note.color, note.key, BLACK);
-            } else if(i == (lines / 2) && j == 0){
-                if(note.pos.lin == (lines / 2) && note.pos.col == 0){
-                    printf("  %s%c%s___%s|%s___%s|%s___%s|%s___%s|%s", note.color ,note.key, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
-                } else if(note.pos.lin == (lines / 2) && note.pos.col == 1){
-                    printf("  %s|%s___%s%c%s___%s|%s___%s|%s___%s|%s", GREEN, BLACK, note.color, note.key, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
-                } else if(note.pos.lin == (lines / 2) && note.pos.col == 2){
-                    printf("  %s|%s___%s|%s___%s%c%s___%s|%s___%s|%s", GREEN, BLACK, RED, BLACK, note.color, note.key, BLACK, BLUE, BLACK, ORANGE, BLACK);
-                } else if(note.pos.lin == (lines / 2) && note.pos.col == 3){
-                    printf("  %s|%s___%s|%s___%s|%s___%s%c%s___%s|%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, note.color, note.key, BLACK, ORANGE, BLACK);
-                } else if(note.pos.lin == (lines / 2) && note.pos.col == 4){
-                    printf("  %s|%s___%s|%s___%s|%s___%s|%s___%s%c%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, note.color, note.key, BLACK);
+    char *color[] = {GREEN, RED, YELLOW, BLUE, ORANGE};
+
+    printf("  %s_________________", BLACK);
+    for (int i = 0; i < lines; i++) {
+        gotoxy(0, i + 1);
+        for (int j = 0; j < COLUMNS; j++) {
+            if(i == (lines / 2) - 1){
+                if(j == 0){
+                    printf("  %s|%s", color[j], BLACK);
                 } else{
-                    printf("  %s|%s___%s|%s___%s|%s___%s|%s___%s|%s", GREEN, BLACK, RED, BLACK, YELLOW, BLACK, BLUE, BLACK, ORANGE, BLACK);
+                    printf("___%s|%s", color[j], BLACK);
                 }
-            } else if(i != (lines / 2)){
+            } else{
                 printf("  %s| ", BLACK);
             }
         }
-        printf("\n");
+    }
+
+    gotoxy(note.pos.col * 4, (note.pos.lin + 1));
+    if(note.pos.lin == (lines / 2) - 1){
+        if(note.pos.col == 0){
+            printf("  %s%c%s", note.color, note.key, BLACK);
+        } else{
+            printf("__%s%c%s", note.color, note.key, BLACK);
+        }
+    } else{
+        printf("  %s%c%s ", note.color, note.key, BLACK);
     }
 
     printf(RESET);
 }
 
 void displayScore(int score, int combo){
+    gotoxy(0, lines + 1);
     printf("\nScore: %d | Combo: x%d", score, combo);
     if(combo >= 10){
         printf("🔥🔥🔥");
@@ -295,17 +276,17 @@ void displayScore(int score, int combo){
 
 void showRecords(){
     char *explosion[4] = {"@", "*", ".", " "};
-    if(record == 1){
+    if(newRecord){
         for(int i = 0; i < 4; i++){
             printf("%s%s NEW %sRECORD %s\n", RED, explosion[i], YELLOW, explosion[i]);
             Sleep(500);
             CLS
         }
         printf(RESET);
-        record = 0;
+        newRecord = false;
     }
 
-    printf("        --- Records ---\n");
+    gotoxy(23, 0); printf("--- Records ---\n");
     printf("Player: %s | Score: %d | Max combo: x%d🔥\n\n", _players[currentID].name, _players[currentID].score, _players[currentID].maxCombo);
     SPAUSE
 }
@@ -340,7 +321,7 @@ void showRanking(){
 }
 
 void start(){
-    const char *start_messages[3] = {"Connecting amplifiers", "Adjusting volume", "Tuning the guitar"};
+    const char *start_messages[] = {"Connecting amplifiers", "Adjusting volume", "Tuning the guitar"};
 
     CLS 
     NOCURSOR
@@ -366,19 +347,19 @@ void start(){
 
     CLS
     loadGame();
-    
+
     CURSOR
-    char choice = '0';
-    while(choice != '1' && choice != '2' && _numPlayers > 0){
-        printf("1. Select a existing player\n");
-        printf("2. Add a new player\n\n");
-        printf("** Enter your choice: ");
-        choice = getch();
+    char *options[] = {"Select an existing player", "Add new player"};
+    int choice;
+
+    if(_numPlayers > 0){
+        printf("-- Choice player --");
+        choice = menu(options, 2);
     }
 
-    if(choice == '1'){
+    if(choice == 0){
         selectPlayer();
-    } else if(choice == '2' || _numPlayers == 0){
+    } else if(choice == 1 || _numPlayers == 0){
         addPlayer();
     }
 
@@ -574,32 +555,29 @@ void changeGuitarSize(){
 }
 
 void developerMode(){
-    char *options[] = {"Add a new player", "Delete a player", "Change points and combo", "Change guitar size", "Exit"};
-    int numOps = 5;
+    char *options[] = {"Add a new player", "Delete a player", "Change points and combo", "Change guitar size"};
+    int numOps = 4;
     int op;
 
     while(1){
-        printf("-- Developer mode --\n");
-        op = menu(options, numOps);
-        
         CLS
-        if(op == 0){
+        printf("-- Developer mode --");
+        op = menu(options, numOps);
+
+        CLS
+        if(op == 0)
             addPlayer();
-        } else if(op == 1){
+        if(op == 1)
             deletePlayer();
-        } else if(op == 2){
+        if(op == 2)
             changePoints();
-        } else if(op == 3){
+        if(op == 3)
             changeGuitarSize();
-        } else if(op == 4){
+        if(op == ESC)
             break;
-        } else if(op == (int)'g'){ // ...
+        if(op == (int)'g') // ...
             printf("Not so fast");
             sleep(1);
-            CLS
-        } else{
-            errorMessage(-5);
-        }
     }
 }   
 
@@ -613,7 +591,7 @@ void title(char *title){
 }
 
 void exitGame(){
-    char *exit_messages[3] = {"Saving the setlist", "Packing the gear", "Turning off the amps"};
+    char *exit_messages[] = {"Saving the setlist", "Packing the gear", "Turning off the amps"};
 
     printf("%s", exit_messages[rand()%3]);
     for(int i = 0; i < 3; i++){
@@ -647,12 +625,13 @@ void saveGame(){
         fprintf(gameFile, "%d;", _players[i].maxCombo);
         fprintf(gameFile, "\n");
     }
+    fprintf(gameFile, "%d#", lines);
 
     fclose(gameFile);
 
     CLS
     printf("Game saved successfully!\n");
-    SPAUSE
+    sleep(1);
 }
 
 void loadGame(){
@@ -666,10 +645,10 @@ void loadGame(){
 
         while (!feof(gameFile)){
             c = fgetc(gameFile);
-            if(c != ';' && c != '\n' && c != EOF){
+            if(c != ';' && c != '#' && c != '\n' && c != EOF){
                 strAux[i] = c;
                 i++;
-            } else if(c == ';' || c == '\n' || c == EOF){
+            } else if(c == ';' || c == '#' || c == '\n' || c == EOF){
                 strAux[i] = '\0';
                 i = 0;
 
@@ -694,6 +673,8 @@ void loadGame(){
                         sep = 0;
                         _numPlayers++;
                     }
+                } else if(c == '#'){
+                    lines = atoi(strAux);
                 }
             }
         }
