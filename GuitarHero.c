@@ -87,9 +87,9 @@ int main(){
 
     start();
     while(1){
-        char *options[] = {"Play", "Records", "Ranking", "Help", "Save", "Exit"};
+        char *options[] = {"🎮 Play", "📀 Records", "🏆 Ranking", "❓ Help", "💾 Save game", "🚪 Quit game"};
         int numOps = 6;
-        
+
         CLS
         printf("-- Guitar Hero --");
         op = (char)menu(options, numOps);
@@ -179,11 +179,22 @@ void play(){
     note.pos.col = rand() % COLUMNS;
 
     NOCURSOR
-    if(note.pos.col == 0) note.key = 'A'; note.color = GREEN;
-    if(note.pos.col == 1) note.key = 'S'; note.color = RED;
-    if(note.pos.col == 2) note.key = 'J'; note.color = YELLOW;
-    if(note.pos.col == 3) note.key = 'K'; note.color = BLUE;
-    if(note.pos.col == 4) note.key = 'L'; note.color = ORANGE;
+    if(note.pos.col == 0){
+        note.key = 'A';
+        note.color = GREEN;
+    } else if(note.pos.col == 1){
+        note.key = 'S';
+        note.color = RED;
+    } else if(note.pos.col == 2){
+        note.key = 'J';
+        note.color = YELLOW;
+    } else if(note.pos.col == 3){
+        note.key = 'K';
+        note.color = BLUE;
+    } else if(note.pos.col == 4){
+        note.key = 'L';
+        note.color = ORANGE;
+    }
 
     while(1){
         CLS
@@ -198,7 +209,7 @@ void play(){
                 combo++;
                 if(combo > _players[currentID].maxCombo){
                     _players[currentID].maxCombo = combo;
-                    newRecord = true;
+                    newRecord = true; // Mark the new record player for the explosion effect on the showRecord function
                 }
             } else if((int)pressed == ESC){
                 return;
@@ -217,11 +228,22 @@ void play(){
             note.pos.lin = 0;
             note.pos.col = rand() % COLUMNS;
 
-            if(note.pos.col == 0) note.key = 'A'; note.color = GREEN;
-            if(note.pos.col == 1) note.key = 'S'; note.color = RED;
-            if(note.pos.col == 2) note.key = 'J'; note.color = YELLOW;
-            if(note.pos.col == 3) note.key = 'K'; note.color = BLUE;
-            if(note.pos.col == 4) note.key = 'L'; note.color = ORANGE;
+            if(note.pos.col == 0){
+                note.key = 'A'; 
+                note.color = GREEN;
+            } else if(note.pos.col == 1){
+                note.key = 'S'; 
+                note.color = RED;
+            } else if(note.pos.col == 2){
+                note.key = 'J'; 
+                note.color = YELLOW;
+            } else if(note.pos.col == 3){
+                note.key = 'K';
+                note.color = BLUE;
+            } else if(note.pos.col == 4){
+                note.key = 'L';
+                note.color = ORANGE;
+            }
 
             continue;
         } else{
@@ -275,8 +297,9 @@ void displayScore(int score, int combo){
 }
 
 void showRecords(){
-    char *explosion[4] = {"@", "*", ".", " "};
-    if(newRecord){
+    char *explosion[4] = {"@", "*", ".", " "}; // Explosion particles
+
+    if(newRecord){ // Displays an explosion effect if the player has a new record
         for(int i = 0; i < 4; i++){
             printf("%s%s NEW %sRECORD %s\n", RED, explosion[i], YELLOW, explosion[i]);
             Sleep(500);
@@ -308,11 +331,11 @@ void showRanking(){
     printf("      --- Ranking ---\n");
     for(int i = 0; i < _numPlayers; i++){
         if(i == 0){
-            printf("%s%d%s - %s [%-3d Points | Max combo: x%.2d]🔥\n", YELLOW, i + 1, RESET, _players[i].name, _players[i].score, _players[i].maxCombo);
+            printf("%s%d%s - %-12s [%.2d Points | Max combo: x%.2d]🔥\n", YELLOW, i + 1, RESET, _players[i].name, _players[i].score, _players[i].maxCombo);
         } else if(i == _numPlayers - 1){
-            printf("%s%d%s - %s [%-3d Points | Max combo: x%.2d]👎\n", RED, i + 1, RESET, _players[i].name, _players[i].score, _players[i].maxCombo);
+            printf("%s%d%s - %-12s [%.2d Points | Max combo: x%.2d]👎\n", RED, i + 1, RESET, _players[i].name, _players[i].score, _players[i].maxCombo);
         }else{
-            printf("%d - %s [%-3d Points | Max combo: x%.2d]\n", i + 1, _players[i].name, _players[i].score, _players[i].maxCombo);
+            printf("%d - %-12s [%.2d Points | Max combo: x%.2d]\n", i + 1, _players[i].name, _players[i].score, _players[i].maxCombo);
         }
     }
 
@@ -555,7 +578,7 @@ void changeGuitarSize(){
 }
 
 void developerMode(){
-    char *options[] = {"Add a new player", "Delete a player", "Change points and combo", "Change guitar size"};
+    char *options[] = {"🆕 Add a new player", "🚫 Delete a player", "🔢 Change points and combo", "🎸 Change guitar size"};
     int numOps = 4;
     int op;
 
@@ -575,9 +598,10 @@ void developerMode(){
             changeGuitarSize();
         if(op == ESC)
             break;
-        if(op == (int)'g') // ...
+        if(op == (int)'g'){ // ...
             printf("Not so fast");
             sleep(1);
+        }
     }
 }   
 
