@@ -89,8 +89,8 @@ int main(){
     while(1){
         char *options[] = {"🎮 Play", "📀 Records", "🏆 Ranking", "❓ Help", "💾 Save game", "🚪 Quit game"};
         int numOps = 6;
-
-        CLS
+        
+        CLS NOCURSOR
         printf("-- Guitar Hero --");
         op = (char)menu(options, numOps);
 
@@ -118,16 +118,24 @@ int menu(char **options, int totalOps){
         key = getch();
 
         // Increases or decreases the position according to the selected key
-        if(key == UP && pos > 0)
-            pos--;
-        if(key == DOWN && pos < totalOps - 1)
-            pos++;
+        if(key == UP){
+            if(pos <= 0){
+                pos = totalOps - 1;
+            } else{
+                pos--;
+            }
+        }
+        if(key == DOWN){
+            if(pos >= totalOps - 1){
+                pos = 0;
+            } else{
+                pos++;
+            }
+        }
 
         if(key == ENTER){ // Select option
-            CURSOR
             return pos;
         } else if(key == 'g' || key == ESC){ // Selected developer mode (dont ask questions)
-            CURSOR
             return (int)key;
         }
     }
@@ -309,7 +317,7 @@ void showRecords(){
         newRecord = false;
     }
 
-    gotoxy(23, 0); printf("--- Records ---\n");
+    gotoxy(23, 0); printf("-- Records --\n");
     printf("Player: %s | Score: %d | Max combo: x%d🔥\n\n", _players[currentID].name, _players[currentID].score, _players[currentID].maxCombo);
     SPAUSE
 }
@@ -328,7 +336,7 @@ void sortPlayers(){
 
 void showRanking(){
     sortPlayers();
-    printf("      --- Ranking ---\n");
+    printf("      -- Ranking --\n");
     for(int i = 0; i < _numPlayers; i++){
         if(i == 0){
             printf("%s%d%s - %-12s [%.2d Points | Max combo: x%.2d]🔥\n", YELLOW, i + 1, RESET, _players[i].name, _players[i].score, _players[i].maxCombo);
@@ -371,7 +379,6 @@ void start(){
     CLS
     loadGame();
 
-    CURSOR
     char *options[] = {"Select an existing player", "Add new player"};
     int choice;
 
@@ -404,52 +411,17 @@ void addPlayer(){
 
 void selectPlayer(){
     int id;
-    char str[100];
-
-    do{
-        CLS
-        printf("--- Players ---\n");
-        for(int i = 0; i < _numPlayers; i++){
-            printf("[%d - %s]\n", i + 1, _players[i].name);
-        }
-        printf("\n** Select the player [by index or name]: ");
-        gets(str);
-        id = isDigitString(str);
-
-        if(id < 0 || id > _numPlayers - 1){
-            errorMessage(-4);
-        }
-    } while(id < 0 || id > _numPlayers - 1);
-    currentID = id;
-}
-
-int isDigitString(char *str)
-{
-    if (isdigit(str[0]) && strlen(str) == 1)
-    {
-        return (atoi(str) - 1);
-    }
-
-    return search(str);
-}
-
-int search(char *str){
-    printf("Searching [%s]", str);
-    for(int i = 0; i < 3; i++){
-        printf(".");
-        Sleep(500);
-    }
-    printf("\n");
+    char *players[_numPlayers];
 
     for(int i = 0; i < _numPlayers; i++){
-        if(strcmp(_players[i].name, str) == 0){
-            printf("\nPlayer [%s] found in position %d!\n", _players[i].name, i + 1);
-            sleep(1);
-            return i;
-        }
+        players[i] = _players[i].name;
     }
 
-    return -1;
+    CLS
+    printf("-- Players --");
+    id = menu(players, _numPlayers);
+
+    currentID = id;
 }
 
 TPlayer createPlayer(){
@@ -457,6 +429,7 @@ TPlayer createPlayer(){
     TPlayer player;
 
     CLS
+    CURSOR
     printf("Enter your name: ");
     gets(strAux);
 
@@ -481,26 +454,18 @@ TPlayer createPlayer(){
 
 void deletePlayer(){
     int id, check = 0;
-    char str[100];
+    char *players[_numPlayers];
 
-    do{
-        CLS
-        printf("--- Players ---\n");
-        for(int i = 0; i < _numPlayers; i++){
-            printf("[%d - %s]\n", i + 1, _players[i].name);
-        }
-        printf("\n** Select the player: ");
-        gets(str);
-        id = isDigitString(str);
+    for(int i = 0; i < _numPlayers; i++){
+        players[i] = _players[i].name;
+    }
 
-        if(id == currentID){
-           check = 1;
-        }
-
-        if(id < 0 || id > _numPlayers - 1){
-            errorMessage(-4);
-        }
-    } while(id < 0 || id > _numPlayers - 1);
+    CLS
+    printf("-- Players --");
+    id = menu(players, _numPlayers);
+    if(id == currentID){
+        check = 1;
+    }
 
     for(int i = id; i < _numPlayers - 1; i++){
         _players[i] = _players[i + 1];
@@ -510,9 +475,13 @@ void deletePlayer(){
     _numPlayers--;
 
 
-    CLS
+    CLS NOCURSOR
     printf("Player deleted!\n");
     SPAUSE
+
+    if(_numPlayers == 0){
+        createPlayer();
+    }
 
     if(check){
         selectPlayer();
@@ -521,24 +490,17 @@ void deletePlayer(){
 
 void changePoints(){
     int points, combo, id;
+    char *players[_numPlayers];
 
-    do{
-        CLS
-        printf("--- Players ---\n");
-        for(int i = 0; i < _numPlayers; i++){
-            printf("[%d - %s]\n", i + 1, _players[i].name);
-        }
-        printf("\n** Select the player: ");
-        scanf("%d", &id);
-        fflush(stdin);
-
-        if(id < 1 || id > _numPlayers){
-            errorMessage(-4);
-        }
-    } while(id < 1 || id > _numPlayers);
-    id--;
+    for(int i = 0; i < _numPlayers; i++){
+        players[i] = _players[i].name;
+    }
 
     CLS
+    printf("--- Players ---\n");
+    id = menu(players, _numPlayers);
+
+    CLS CURSOR
     printf("Current points: %d\n", _players[id].score);
     printf("New points: ");
     scanf("%d", &points);
@@ -553,7 +515,7 @@ void changePoints(){
     _players[id].score = points;
     _players[id].maxCombo = combo;
 
-    CLS
+    CLS NOCURSOR
     printf("Points and combo changed!\n");
     SPAUSE
 }
@@ -561,7 +523,7 @@ void changePoints(){
 void changeGuitarSize(){
 
     do{
-        CLS
+        CLS CURSOR
         printf("Current guitar size: %d\n", lines);
         printf("New guitar size: ");
         scanf("%d", &lines);
@@ -572,7 +534,7 @@ void changeGuitarSize(){
         }
     } while(lines < 1);
 
-    CLS
+    CLS NOCURSOR
     printf("Guitar size changed!\n");
     SPAUSE
 }
@@ -628,7 +590,7 @@ void exitGame(){
 }
 
 void saveGame(){
-    char *spin[4] = {"|", "/", "-", "\\"};
+    char *spin[] = {"|", "/", "-", "\\"};
     int i = 0;
 
     for(int j = 0; j < 10; j++){
