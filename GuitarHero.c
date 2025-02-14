@@ -46,7 +46,7 @@ typedef struct{
 } TPlayer;
 
 /* Functions declarations */
-int menu(char **options, int totalOps); // Show interactive menu
+int selection(char **options, int totalOps); // Show interactive selection
 void start(); // Start the game
 void title(char *title); // Type the title: "Guitar Hero"
 void option(char op); // Choose option
@@ -69,8 +69,6 @@ void freeMemory(); // Free memory
 void saveGame(); // Save game in a file
 void loadGame(); // Load game from a file
 void errorMessage(int errorCode); // Show eint message
-int isDigitString(char *str); // Verify if a string is a digit
-int search(char *str); // Search a player by name
 void gotoxy(int x, int y); // Go to position X, Y (Very useful comment)
 
 /* Global variables */
@@ -89,10 +87,10 @@ int main(){
     while(1){
         char *options[] = {"🎮 Play", "📀 Records", "🏆 Ranking", "❓ Help", "💾 Save game", "🚪 Quit game"};
         int numOps = 6;
-        
+
         CLS NOCURSOR
         printf("-- Guitar Hero --");
-        op = (char)menu(options, numOps);
+        op = (char)selection(options, numOps);
 
         option(op);
     }
@@ -100,7 +98,7 @@ int main(){
     return 0;
 }
 
-int menu(char **options, int totalOps){
+int selection(char **options, int totalOps){
     int pos = 0;
     int key;
 
@@ -125,6 +123,7 @@ int menu(char **options, int totalOps){
                 pos--;
             }
         }
+
         if(key == DOWN){
             if(pos >= totalOps - 1){
                 pos = 0;
@@ -175,7 +174,7 @@ void play(){
     int delay, numOps = 3;
 
     printf("Set difficulty:");
-    int dif = menu(options, numOps);
+    int dif = selection(options, numOps);
 
     if(dif == 0) delay = 500;
     if(dif == 1) delay = 300;
@@ -384,7 +383,7 @@ void start(){
 
     if(_numPlayers > 0){
         printf("-- Choice player --");
-        choice = menu(options, 2);
+        choice = selection(options, 2);
     }
 
     if(choice == 0){
@@ -419,7 +418,7 @@ void selectPlayer(){
 
     CLS
     printf("-- Players --");
-    id = menu(players, _numPlayers);
+    id = selection(players, _numPlayers);
 
     currentID = id;
 }
@@ -462,7 +461,8 @@ void deletePlayer(){
 
     CLS
     printf("-- Players --");
-    id = menu(players, _numPlayers);
+    id = selection(players, _numPlayers);
+
     if(id == currentID){
         check = 1;
     }
@@ -498,7 +498,7 @@ void changePoints(){
 
     CLS
     printf("--- Players ---\n");
-    id = menu(players, _numPlayers);
+    id = selection(players, _numPlayers);
 
     CLS CURSOR
     printf("Current points: %d\n", _players[id].score);
@@ -547,7 +547,7 @@ void developerMode(){
     while(1){
         CLS
         printf("-- Developer mode --");
-        op = menu(options, numOps);
+        op = selection(options, numOps);
 
         CLS
         if(op == 0)

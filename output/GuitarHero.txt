@@ -1,4 +1,6 @@
 mugg;7030;40;
 Pedro H.;5875;62;
+vivi linda;220;30;
+bill;185;20;
 Augusto;0;0;
 10#
