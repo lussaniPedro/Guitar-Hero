@@ -20,7 +20,7 @@
 #define YELLOW "\033[33m"
 #define BLUE "\033[34m"
 #define RESET "\033[0m"
-#define BLACK "\033[30m"
+#define BLACK "\033[0m"
 #define GRAY "\033[38;5;250m"
 #define ORANGE "\033[38;5;202m"
 #define NOCURSOR printf("\e[?25l"); // Hide text cursor
@@ -77,8 +77,6 @@ void freeMemory(); // Free memory
 void saveGame(); // Save game in a file
 void loadGame(); // Load game from a file
 void errorMessage(int errorCode); // Show eint message
-int isDigitString(char *str); // Verify if a string is a digit
-int search(char *str); // Search a player by name
 void gotoxy(int x, int y); // Go to position X, Y (Very useful comment)
 void tellemcontrols(); // Show controls
 void settings(); // Show settings
@@ -103,12 +101,12 @@ int main()
     while (1)
     {
         char *options[] = {
-            "🕹️  Play", 
-            "📀 Records", 
-            "🏆 Ranking", 
-            "❓ Help", 
-            "⚙️  Settings",  
-            "💾 Save game", 
+            "🕹️  Play",
+            "📀 Records",
+            "🏆 Ranking",
+            "❓ Help",
+            "⚙️  Settings",
+            "💾 Save game",
             "🚪 Quit game"
         };
 
@@ -182,21 +180,25 @@ int selection(char **options, int size){
 void tellemcontrols()
 {
     char *color[] = {GREEN, RED, YELLOW, BLUE, ORANGE};
-    char *keys[] = {"A", "S", "J", "K", "L"};
+
     CLS
     gotoxy(5, 0);
-    printf("Controls:\n\n");
+    printf("Controls:\n");
     printf("___________________\nControls -> Colors:\n\n");
+
     for(int i = 0; i < COLUMNS; i++)
     {
-        printf("%s|%s|%s ", color[i], keys[i], RESET);
+        printf("%s|%c|%s ", color[i], controls[i], RESET);
     }
-    printf("\n___________________\nMenuops -> Keys:\n\n");
+
+    printf("\n___________________\n Menu ops -> Keys:\n\n");
     printf(" ENTER = Open menu \n");
-    printf("ESC = Exit the menu\n");
-    printf("        %s↑%s  %s↓%s        \n", BLUE, RESET, RED, RESET);
-    printf("       UP DOWN\n");
-    printf("\n___________________\n\n\n");
+    printf("ESC = Exit the menu\n\n");
+    printf("       %s↑%s  %s↓%s        \n", GREEN, RESET, RED, RESET);
+    printf("      UP DOWN\n");
+    printf("       %s→%s  %s←%s        \n", BLUE, RESET, ORANGE, RESET);
+    printf("    RIGHT LEFT\n");
+    printf("___________________\n\n\n");
     printf(RESET);
     SPAUSE
 }
@@ -318,15 +320,16 @@ int selectionControls(char *options){
             {
                 printf("👇"); // Gay selection indicator
                 gotoxy(0 + i * 4, 1); // Go to print position X, Y
-                printf(" %s%c%s   \n", color, options[i], RESET); // Selected option
+                printf(" %s%c%s   \n\n", color, options[i], RESET); // Selected key
             }
             else
             {
                 printf(" "); // Erase gay selection indicator
                 gotoxy(0 + i * 4, 1); // Go to print position X, Y
-                printf(" %s%c%s  \n", color, options[i], RESET);
+                printf(" %s%c%s  \n\n", color, options[i], RESET);
             }
         }
+        printf("Press enter to select the key\n");
         key = getch();
         
         // Increases or decreases the position according to the selected key
@@ -396,7 +399,6 @@ void option(char op)
         "👶 Tutorial",
         "🎮 Controls"
     };
-
     int nops = 2;
 
     CLS switch (op)
