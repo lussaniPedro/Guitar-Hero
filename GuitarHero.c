@@ -7,7 +7,6 @@
 #include <conio.h>
 #include <stdbool.h>
 #include <ctype.h>
-//#pragma GCC optimize("O3")
 
 /* Constants definitions */
 #define COLUMNS 5
@@ -22,11 +21,14 @@
 #define BLUE "\033[34m"
 #define RESET "\033[0m"
 #define BLACK "\033[30m"
+#define GRAY "\033[38;5;250m"
 #define ORANGE "\033[38;5;202m"
 #define NOCURSOR printf("\e[?25l"); // Hide text cursor
 #define CURSOR printf("\e[?25h");   // Show text cursor
 #define UP 72                       // Key "up" value
 #define DOWN 80                     // Key "down" value
+#define LEFT 75                    // Key "left" value
+#define RIGHT 77                   // Key "right" value
 #define ENTER 13                    // Key "Enter" value
 #define ESC 27                      // Key "Esc" value
 
@@ -52,7 +54,7 @@ typedef struct
 } TPlayer;
 
 /* Functions declarations */
-int menu(char **options, int totalOps); // Show interactive menu
+int selection(char **options, int size); // Show interactive selection
 void start(); // Start the game
 void title(char *title); // Type the title: "Guitar Hero"
 void option(char op); // Choose option
@@ -78,6 +80,10 @@ void errorMessage(int errorCode); // Show eint message
 int isDigitString(char *str); // Verify if a string is a digit
 int search(char *str); // Search a player by name
 void gotoxy(int x, int y); // Go to position X, Y (Very useful comment)
+void tellemcontrols(); // Show controls
+void settings(); // Show settings
+void changecontrols(); // Change controls
+int selectionControls(char *options); // Select controls
 
 /* Global variables */
 TPlayer *_players;      // Array of players
@@ -85,6 +91,7 @@ int _numPlayers = 0;    // Number of players
 int currentID = 0;      // Current player index
 bool newRecord = false; // Player record
 int lines = 16;         // Lines of guitar
+char controls[5] = {"ASJKL"}; // Guitar controls
 
 int main()
 {
@@ -95,12 +102,21 @@ int main()
     start();
     while (1)
     {
-        char *options[] = {"🎮 Play", "📀 Records", "🏆 Ranking", "❓ Help", "💾 Save game", "🚪 Quit game"};
-        int numOps = 6;
+        char *options[] = {
+            "🕹️  Play", 
+            "📀 Records", 
+            "🏆 Ranking", 
+            "❓ Help", 
+            "⚙️  Settings",  
+            "💾 Save game", 
+            "🚪 Quit game"
+        };
+
+        int numOps = 7;
 
         CLS NOCURSOR
         printf("-- Guitar Hero --");
-        op = (char)menu(options, numOps);
+        op = selection(options, numOps);
 
         option(op);
     }
@@ -108,14 +124,14 @@ int main()
     return 0;
 }
 
-int menu(char **options, int totalOps){
+int selection(char **options, int size){
     int pos = 0;
     int key;
 
     NOCURSOR // Hide cursor
-        while (true)
+    while (true)
     {
-        for (int i = 0; i < totalOps; i++)
+        for (int i = 0; i < size; i++)
         {
             gotoxy(0, 2 + i); // Go to print position X, Y
 
@@ -135,7 +151,7 @@ int menu(char **options, int totalOps){
         {
             if (pos <= 0)
             {
-                pos = totalOps - 1;
+                pos = size - 1;
             }
             else
             {
@@ -143,7 +159,7 @@ int menu(char **options, int totalOps){
             }
         }
         if(key == DOWN){
-            if(pos >= totalOps - 1){
+            if(pos >= size - 1){
                 pos = 0;
             }
             else
@@ -168,10 +184,11 @@ void tellemcontrols()
     char *color[] = {GREEN, RED, YELLOW, BLUE, ORANGE};
     char *keys[] = {"A", "S", "J", "K", "L"};
     CLS
-    printf("----Controls:\n\n");
+    gotoxy(5, 0);
+    printf("Controls:\n\n");
     printf("___________________\nControls -> Colors:\n\n");
     for(int i = 0; i < COLUMNS; i++)
-    {   
+    {
         printf("%s|%s|%s ", color[i], keys[i], RESET);
     }
     printf("\n___________________\nMenuops -> Keys:\n\n");
@@ -186,12 +203,12 @@ void tellemcontrols()
 
 void tutorial()
 {
-    TNote note;
+    /* TNote note;
     CLS
     note.pos.col = 0;
     note.pos.lin = 0;
     note.key = 'A';
-    note.color = GREEN;
+    note.color = GREEN; */
 
 
 }
@@ -201,12 +218,173 @@ void ophelp(char op)
     CLS 
     switch(op)
     {
-        case 0:
-            printf("Sei la joe, joga ai kk\n");
-            sleep(2);
-            break;
         case 1:
             tellemcontrols();
+            break;
+    }
+}
+
+void changecontrols()
+{
+    CLS
+    int op = selectionControls(controls);
+    
+    gotoxy(0, 3);
+    printf("Press the key you want to change!\n");
+
+    if(op == ESC)
+    {
+        return;
+    }
+    
+    do
+    {
+        char c = getch();
+        if(c == ESC) return;
+        
+        if(!isalpha(c))
+        {
+            errorMessage(-7);
+            sleep(1);
+            continue;
+        } else {
+            int check = 0;
+            
+            for(int i = 0; i < 5; i++)
+            {
+                if(controls[i] == toupper(c))
+                {
+                    errorMessage(-8);
+                    sleep(1);
+                    check = 0;
+                    break;
+                } else {
+                    check = 1;
+                }
+            }
+
+            if (check)
+            {
+                controls[op] = toupper(c);
+                break;
+            }            
+        }
+    } while(1);
+    
+    char *color;
+    if (op == 0) color = GREEN;
+    if (op == 1) color = RED;
+    if (op == 2) color = YELLOW;
+    if (op == 3) color = BLUE;
+    if (op == 4) color = ORANGE;
+    
+    gotoxy(1 + op * 4, 1); // Go to print position X, Y
+    printf("%s%c%s", color, controls[op], RESET);
+    
+    gotoxy(0, 3);
+    printf("                                 "); // Erase previous print line
+
+    gotoxy(0, 3);
+    printf("Controls changed sucessfully!\n");
+    sleep(2);
+    return;
+}
+
+int selectionControls(char *options){
+    int pos = 0;
+    int size = strlen(options);
+    int key;
+
+    NOCURSOR // Hide cursor
+    while (true)
+    {
+        for (int i = 0; i < size; i++)
+        {
+            char *color;
+            if(i == 0){
+                color = GREEN;
+            } else if(i == 1){
+                color = RED;
+            } else if(i == 2){
+                color = YELLOW;
+            } else if(i == 3){
+                color = BLUE;
+            } else if(i == 4){
+                color = ORANGE;
+            }
+            gotoxy(0 + i * 4, 0); // Go to print position X, Y
+            
+            if (i == pos)
+            {
+                printf("👇"); // Gay selection indicator
+                gotoxy(0 + i * 4, 1); // Go to print position X, Y
+                printf(" %s%c%s   \n", color, options[i], RESET); // Selected option
+            }
+            else
+            {
+                printf(" "); // Erase gay selection indicator
+                gotoxy(0 + i * 4, 1); // Go to print position X, Y
+                printf(" %s%c%s  \n", color, options[i], RESET);
+            }
+        }
+        key = getch();
+        
+        // Increases or decreases the position according to the selected key
+        if (key == LEFT)
+        {
+            if (pos <= 0)
+            {
+                pos = size - 1;
+            }
+            else
+            {
+                pos--;
+            }
+        }
+        if(key == RIGHT){
+            if(pos >= size - 1){
+                pos = 0;
+            }
+            else
+            {
+                pos++;
+            }
+        }
+        
+        if (key == ENTER)
+        { // Select option
+            gotoxy(1 + pos * 4, 1); // Go to print position X, Y
+            printf("%s%c%s", GRAY, options[pos], RESET);
+            return pos;
+        }
+        else if (key == ESC)
+        { // Selected developer mode (dont ask questions)
+            return key;
+        }
+    }
+}
+
+void settings()
+{
+
+    char *options[] = {
+        "📏 Guitar size",
+        "🎮 Guitar controls"
+    };
+
+    int nops = 2;
+
+    CLS
+    printf("-- Settings --\n\n");
+    int op = selection(options, nops);
+
+    switch(op)
+    {
+        case 0:
+            changeGuitarSize();
+            break;
+        case 1:
+            changecontrols();
             break;
     }
 }
@@ -214,7 +392,11 @@ void ophelp(char op)
 void option(char op)
 {
     char opl;
-    char *ops[] = {"👶 Tutorial", "🎮 Controls"};
+    char *ops[] = {
+        "👶 Tutorial",
+        "🎮 Controls"
+    };
+
     int nops = 2;
 
     CLS switch (op)
@@ -230,13 +412,16 @@ void option(char op)
         break;
     case 3:
         printf("-- Help menu --\n\n");
-        opl = (char)menu(ops, nops);
+        opl = selection(ops, nops);
         ophelp(opl);
         break;
     case 4:
-        saveGame();
+        settings();
         break;
     case 5:
+        saveGame();
+        break;
+    case 6:
         exitGame();
         break;
     case (int)'g': // No comments
@@ -248,7 +433,12 @@ void option(char op)
 void play()
 {
     TNote note;
-    char *options[] = {"Cry baby👶", "Normal😐", "Rock 'n' Roll🤘"};
+    char *options[] = {
+        "Cry baby👶",
+        "Normal😐", 
+        "Rock 'n' Roll🤘"
+    };
+
     int delay, numOps = 3;
 
     printf("Set difficulty:");
@@ -270,27 +460,27 @@ void play()
     NOCURSOR
     if (note.pos.col == 0)
     {
-        note.key = 'A';
+        note.key = controls[0];
         note.color = GREEN;
     }
     else if (note.pos.col == 1)
     {
-        note.key = 'S';
+        note.key = controls[1];
         note.color = RED;
     }
     else if (note.pos.col == 2)
     {
-        note.key = 'J';
+        note.key = controls[2];
         note.color = YELLOW;
     }
     else if (note.pos.col == 3)
     {
-        note.key = 'K';
+        note.key = controls[3];
         note.color = BLUE;
     }
     else if (note.pos.col == 4)
     {
-        note.key = 'L';
+        note.key = controls[4];
         note.color = ORANGE;
     }
 
@@ -310,17 +500,17 @@ void play()
                 combo++;
                 if (combo > _players[currentID].maxCombo)
                 {
-                    _players[currentID].maxCombo = combo;
+                       _players[currentID].maxCombo = combo;
                     newRecord = true; // Mark the new record player for the explosion effect on the showRecord function
                 }
             }
             else if ((int)pressed == ESC)
             {
-                return;
+                break;
             }
             else
             {
-                if (_players[currentID].score >= 5)
+                if (_players[currentID].score >= 5) 
                     _players[currentID].score -= 5;
                 combo = 0;
             }
@@ -329,7 +519,8 @@ void play()
 
         if (note.pos.lin >= lines)
         {
-            break;
+            _players[currentID].score -= 5;
+            combo = 0;
         }
 
         if (check)
@@ -339,27 +530,27 @@ void play()
 
             if (note.pos.col == 0)
             {
-                note.key = 'A';
+                note.key = controls[0];
                 note.color = GREEN;
             }
             else if (note.pos.col == 1)
             {
-                note.key = 'S';
+                note.key = controls[1];
                 note.color = RED;
             }
             else if (note.pos.col == 2)
             {
-                note.key = 'J';
+                note.key = controls[2];
                 note.color = YELLOW;
             }
             else if (note.pos.col == 3)
             {
-                note.key = 'K';
+                note.key = controls[3];
                 note.color = BLUE;
             }
             else if (note.pos.col == 4)
             {
-                note.key = 'L';
+                note.key = controls[4];
                 note.color = ORANGE;
             }
 
@@ -579,7 +770,7 @@ void selectPlayer()
 
     CLS
     printf("-- Players --");
-    id = menu(players, _numPlayers);
+    id = selection(players, _numPlayers);
 
     currentID = id;
 }
@@ -601,6 +792,7 @@ TPlayer createPlayer()
             if (strcmp(_players[i].name, strAux) == 0)
             {
                 errorMessage(-3);
+                SPAUSE
                 return createPlayer();
             }
         }
@@ -628,7 +820,7 @@ void deletePlayer()
 
     CLS
     printf("-- Players --");
-    id = menu(players, _numPlayers);
+    id = selection(players, _numPlayers);
     if(id == currentID){
         check = 1;
     }
@@ -668,7 +860,7 @@ void changePoints()
 
     CLS
     printf("--- Players ---\n");
-    id = menu(players, _numPlayers);
+    id = selection(players, _numPlayers);
 
     CLS CURSOR
         printf("Current points: %d\n", _players[id].score);
@@ -704,6 +896,7 @@ void changeGuitarSize()
         if (lines < 1)
         {
             errorMessage(-6);
+            SPAUSE
         }
     } while (lines < 1);
 
@@ -714,15 +907,20 @@ void changeGuitarSize()
 
 void developerMode()
 {
-    char *options[] = {"🆕 Add a new player", "🚫 Delete a player", "🔢 Change points and combo", "🎸 Change guitar size"};
-    int numOps = 4;
+    char *options[] = {
+        "🆕 Add a new player",
+        "🚫 Delete a player",
+        "🔢 Change points and combo",
+    };
+
+    int numOps = 3;
     int op;
 
     while (1)
     {
         CLS
         printf("-- Developer mode --");
-        op = menu(options, numOps);
+        op = selection(options, numOps);
 
         CLS if (op == 0)
             addPlayer();
@@ -730,12 +928,9 @@ void developerMode()
             deletePlayer();
         if (op == 2)
             changePoints();
-        if (op == 3)
-            changeGuitarSize();
         if (op == ESC)
             break;
-        if (op == (int)'g')
-        { // ...
+        if (op == (int)'g'){ // ...
             printf("Not so fast");
             sleep(1);
         }
@@ -784,6 +979,7 @@ void saveGame()
     if (gameFile == NULL)
     {
         errorMessage(-2);
+        SPAUSE
     }
 
     for (int i = 0; i < _numPlayers; i++)
@@ -882,6 +1078,7 @@ void validateAllocation(void *ptr)
     if (ptr == NULL)
     {
         errorMessage(-1);
+        SPAUSE
     }
 }
 
@@ -907,12 +1104,16 @@ void errorMessage(int errorCode)
     case -6:
         printf("\nERROR: Negative lines not allowed!!!\n");
         break;
+    case -7:
+        printf("\nERROR: Invalid key!!!\n");
+        break;
+    case -8:
+        printf("\nERROR: Key already in use!!!\n");
+        break;
     default:
         printf("\nERROR: Unknown error!!!\n");
         break;
     }
-
-    SPAUSE
 }
 
 void gotoxy(int x, int y)
