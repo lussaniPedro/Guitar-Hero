@@ -27,10 +27,11 @@
 #define CURSOR printf("\e[?25h");   // Show text cursor
 #define UP 72                       // Key "up" value
 #define DOWN 80                     // Key "down" value
-#define LEFT 75                    // Key "left" value
-#define RIGHT 77                   // Key "right" value
+#define LEFT 75                     // Key "left" value
+#define RIGHT 77                    // Key "right" value
 #define ENTER 13                    // Key "Enter" value
 #define ESC 27                      // Key "Esc" value
+#define EXIT while(getch() != ESC); // Exit the menu
 
 /* Struct definitions */
 typedef struct
@@ -64,7 +65,7 @@ void sortPlayers(); // Sort players
 void showRanking(); // Show players rankings
 void printGame(TNote note); // Game logic
 void exitGame(); // Exit the game
-void displayScore(int score, int combo); // Display current score
+void displayScore(int score, int combo, bool miss); // Display current score
 void addPlayer(); // Triggers the function to create a player
 void selectPlayer(); // Select a existing player
 TPlayer createPlayer(); // Create new player
@@ -82,6 +83,7 @@ void tellemcontrols(); // Show controls
 void settings(); // Show settings
 void changecontrols(); // Change controls
 int selectionControls(char *options); // Select controls
+void NPC(int pos, char *str, int x, int y); // Game assistant
 
 /* Global variables */
 TPlayer *_players;      // Array of players
@@ -200,19 +202,91 @@ void tellemcontrols()
     printf("    RIGHT LEFT\n");
     printf("___________________\n\n\n");
     printf(RESET);
-    SPAUSE
+
+    EXIT
 }
 
 void tutorial()
 {
-    /* TNote note;
-    CLS
-    note.pos.col = 0;
+    TNote note;
     note.pos.lin = 0;
-    note.key = 'A';
-    note.color = GREEN; */
+    note.pos.col = rand() % COLUMNS;
+    
+    NOCURSOR
+    if (note.pos.col == 0)
+    {
+        note.key = controls[0];
+        note.color = GREEN;
+    }
+    else if (note.pos.col == 1)
+    {
+        note.key = controls[1];
+        note.color = RED;
+    }
+    else if (note.pos.col == 2)
+    {
+        note.key = controls[2];
+        note.color = YELLOW;
+    }
+    else if (note.pos.col == 3)
+    {
+        note.key = controls[3];
+        note.color = BLUE;
+    }
+    else if (note.pos.col == 4)
+    {
+        note.key = controls[4];
+        note.color = ORANGE;
+    }
 
+    NPC(2, "- Welcome!!! Im your in-game assistant", 0, 0);
+    printf("\n\n");
+    SPAUSE
 
+    CLS
+
+    NPC(1, "- This is the tutorial", 0, 0);
+    printf("\n\n");
+    SPAUSE
+
+    while(1){
+        CLS
+        printGame(note);
+
+        NPC(1, "", 23, lines - 1);
+        printf("\n\n");
+        SPAUSE
+    }
+}
+
+void NPC(int pos, char *str, int x, int y){
+    gotoxy(x, y);
+
+    if(pos == 1){
+        printf(" O %s\n", str);
+        gotoxy(x, y + 1);
+        printf("/|\\");
+    } else if(pos == 2){
+        printf(" O/ %s\n", str);
+        gotoxy(x, y + 1);
+        printf("/|");
+    } else if(pos == 3){
+        printf("\\O/ %s\n", str);
+        gotoxy(x, y + 1);
+        printf(" |");
+    }
+
+    /* 
+        1:
+            O
+           /|\
+        2:
+            O/
+           /|
+        3:
+           \O/
+            |
+    */
 }
 
 void ophelp(char op)
@@ -220,6 +294,9 @@ void ophelp(char op)
     CLS 
     switch(op)
     {
+        case 0:
+            tutorial();
+            break;
         case 1:
             tellemcontrols();
             break;
@@ -456,6 +533,7 @@ void play()
         return;
 
     int combo = 0;
+    bool miss = false;
     note.pos.lin = 0;
     note.pos.col = rand() % COLUMNS;
 
@@ -490,7 +568,7 @@ void play()
     {
         CLS
             printGame(note);
-        displayScore(_players[currentID].score, combo);
+        displayScore(_players[currentID].score, combo, miss);
 
         int check = 0;
         if (kbhit())
@@ -499,10 +577,11 @@ void play()
             if (toupper(pressed) == note.key && note.pos.lin == (lines / 2))
             {
                 _players[currentID].score += 5;
+                miss = false;
                 combo++;
                 if (combo > _players[currentID].maxCombo)
                 {
-                       _players[currentID].maxCombo = combo;
+                    _players[currentID].maxCombo = combo;
                     newRecord = true; // Mark the new record player for the explosion effect on the showRecord function
                 }
             }
@@ -515,6 +594,7 @@ void play()
                 if (_players[currentID].score >= 5) 
                     _players[currentID].score -= 5;
                 combo = 0;
+                miss = true;
             }
             check = 1;
         }
@@ -615,7 +695,7 @@ void printGame(TNote note)
     printf(RESET);
 }
 
-void displayScore(int score, int combo)
+void displayScore(int score, int combo, bool miss)
 {
     gotoxy(0, lines + 1);
     printf("\nScore: %d | Combo: x%d", score, combo);
@@ -623,6 +703,11 @@ void displayScore(int score, int combo)
     {
         printf("🔥🔥🔥");
     }
+
+    if(miss){
+        printf(" MISS!");
+    }
+
     printf("\n");
 }
 
@@ -645,7 +730,7 @@ void showRecords()
     gotoxy(23, 0);
     printf("-- Records --\n");
     printf("Player: %s | Score: %d | Max combo: x%d🔥\n\n", _players[currentID].name, _players[currentID].score, _players[currentID].maxCombo);
-    SPAUSE
+    EXIT
 }
 
 void sortPlayers()
@@ -685,7 +770,7 @@ void showRanking()
     }
 
     printf("\n");
-    SPAUSE
+    EXIT
 }
 
 void start()
