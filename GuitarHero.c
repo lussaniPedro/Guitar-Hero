@@ -11,6 +11,7 @@
 /* Constants definitions */
 #define COLUMNS 5
 #define PAUSE getch();
+#define SKIP_PAUSE() if(getch() == ' ') { CLS printf("Tutorial skipped!"); Sleep(900); return; }
 #define CLS (_WIN32 ? system("cls") : system("clear"));
 #define SPAUSE                                \
     printf("Press any key to continue. . ."); \
@@ -227,38 +228,52 @@ void tutorial()
 
     NOCURSOR
 
+    gotoxy(0, 3);
+    printf("Press %sSPACE%s to SKIP tutorial", RED, RESET);
+
     NPC(2, "- Welcome!!! Im your in-game assistant", 0, 0);
     printf("\n\n");
-    PAUSE
+    SKIP_PAUSE() // if(getch() == ' ') return;
 
     CLS
+    gotoxy(0, 3);
+    printf("Press %sSPACE%s to SKIP tutorial", RED, RESET);
 
     NPC(1, "- This is the tutorial", 0, 0);
     printf("\n\n");
-    PAUSE
+    SKIP_PAUSE()
 
     for(int i = 0; i < lines; i++, note.pos.lin++){
         CLS
         printGame(note);
+        gotoxy(0, lines + 2);
+        printf("Press %sSPACE%s to SKIP tutorial", RED, RESET);
 
+        char str[100];
         if(note.pos.lin == (lines / 2) - 2){
-            NPC(3, "- Press the key (J) on the marked line!", 23, (lines / 2));
-            sleep(4);
+            sprintf(str, "- Press the key %s(J)%s on the marked line!", YELLOW, RESET);
+            NPC(3, str, 23, (lines / 2));
+            sleep(3);
         } else if(note.pos.lin == (lines / 2) - 1){
             char key;
 
             do{
-                NPC(3, "- Press the key (J) on the marked line!", 23, (lines / 2));
+                sprintf(str, "- PRESS %s(J)%s NOW!", YELLOW, RESET);
+                NPC(3, str, 23, (lines / 2));
                 key = getch();
+
+                if(key == ' ') return;
             } while(key != 'J' && key != 'j');
 
             CLS
+            gotoxy(0, lines + 2);
+            printf("Press %sSPACE%s to SKIP tutorial", RED, RESET);
             note.key = '|';
 
             printGame(note);
 
             NPC(4, "- PERFECT!!!", 23, (lines / 2));
-            PAUSE
+            SKIP_PAUSE()
 
             break;
         } else{
@@ -267,11 +282,15 @@ void tutorial()
         }
     }
 
+    CLS
     NPC(4, "- WOW! You finish the tutorial!!!", 23, (lines / 2));
     PAUSE
 
     if(_players[currentID].firstTime){
         CLS
+        gotoxy(0, lines + 2);
+        printf("Press %sSPACE%s to skip tutorial", RED, RESET);
+
         NPC(1, "- Now, we go to real game!", 23, (lines / 2));
         PAUSE
 
@@ -758,6 +777,7 @@ void printGame(TNote note)
 {
     char *color[] = {GREEN, RED, YELLOW, BLUE, ORANGE};
 
+    gotoxy(0, 0);
     printf("  %s_________________", BLACK);
     for (int i = 0; i < lines; i++)
     {
