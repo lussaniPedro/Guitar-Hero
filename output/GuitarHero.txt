@@ -1,6 +1,6 @@
-mugg;7030;40;
-Lussani;6090;54;
-bill;185;20;
-vivi;20;5;
-Augusto;0;0;
+Lussani;7720;54;0;
+mugg;7030;40;1;
+bill;185;20;1;
+vivi;20;5;1;
+Augusto;0;0;1;
 10#

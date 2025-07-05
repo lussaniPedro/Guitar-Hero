@@ -52,6 +52,7 @@ typedef struct
     char *name;   // Player name
     int score;    // Player score
     int maxCombo; // Plint max combo
+    bool firstTime;
 } TPlayer;
 
 /* Functions declarations */
@@ -59,7 +60,8 @@ int selection(char **options, int size); // Show interactive selection
 void start(); // Start the game
 void title(char *title); // Type the title: "Guitar Hero"
 void option(char op); // Choose option
-void play(); // Play the game
+void startGame(); // Triggers the play function
+void play(int dif); // Play the game
 void showRecords(); // Show player records
 void sortPlayers(); // Sort players
 void showRanking(); // Show players rankings
@@ -84,6 +86,8 @@ void settings(); // Show settings
 void changecontrols(); // Change controls
 int selectionControls(char *options); // Select controls
 void NPC(int pos, char *str, int x, int y); // Game assistant
+void tutorial();
+void endGame(int gameScore, bool newRecord);
 
 /* Global variables */
 TPlayer *_players;      // Array of players
@@ -100,6 +104,13 @@ int main()
     SetConsoleOutputCP(65001);
 
     start();
+
+    if(_players[currentID].firstTime){
+        tutorial();
+        _players[currentID].score = 0;
+        _players[currentID].maxCombo = 0;
+    }
+
     while (1)
     {
         char *options[] = {
@@ -209,53 +220,66 @@ void tellemcontrols()
 void tutorial()
 {
     TNote note;
-    note.pos.lin = 0;
-    note.pos.col = rand() % COLUMNS;
-    
+    note.pos.lin = 0;    
+    note.pos.col = 2;
+    note.color = YELLOW;
+    note.key = 'J';
+
     NOCURSOR
-    if (note.pos.col == 0)
-    {
-        note.key = controls[0];
-        note.color = GREEN;
-    }
-    else if (note.pos.col == 1)
-    {
-        note.key = controls[1];
-        note.color = RED;
-    }
-    else if (note.pos.col == 2)
-    {
-        note.key = controls[2];
-        note.color = YELLOW;
-    }
-    else if (note.pos.col == 3)
-    {
-        note.key = controls[3];
-        note.color = BLUE;
-    }
-    else if (note.pos.col == 4)
-    {
-        note.key = controls[4];
-        note.color = ORANGE;
-    }
 
     NPC(2, "- Welcome!!! Im your in-game assistant", 0, 0);
     printf("\n\n");
-    SPAUSE
+    PAUSE
 
     CLS
 
     NPC(1, "- This is the tutorial", 0, 0);
     printf("\n\n");
-    SPAUSE
+    PAUSE
 
-    while(1){
+    for(int i = 0; i < lines; i++, note.pos.lin++){
         CLS
         printGame(note);
 
-        NPC(1, "", 23, lines - 1);
-        printf("\n\n");
-        SPAUSE
+        if(note.pos.lin == (lines / 2) - 2){
+            NPC(3, "- Press the key (J) on the marked line!", 23, (lines / 2));
+            sleep(4);
+        } else if(note.pos.lin == (lines / 2) - 1){
+            char key;
+
+            do{
+                NPC(3, "- Press the key (J) on the marked line!", 23, (lines / 2));
+                key = getch();
+            } while(key != 'J' && key != 'j');
+
+            CLS
+            note.key = '|';
+
+            printGame(note);
+
+            NPC(4, "- PERFECT!!!", 23, (lines / 2));
+            PAUSE
+
+            break;
+        } else{
+            NPC(1, "", 23, (lines / 2));
+            Sleep(500);
+        }
+    }
+
+    NPC(4, "- WOW! You finish the tutorial!!!", 23, (lines / 2));
+    PAUSE
+
+    if(_players[currentID].firstTime){
+        CLS
+        NPC(1, "- Now, we go to real game!", 23, (lines / 2));
+        PAUSE
+
+        CLS
+        NPC(1, "", 23, (lines / 2));
+        play(0);
+
+        _players[currentID].firstTime = false;
     }
 }
 
@@ -269,11 +293,15 @@ void NPC(int pos, char *str, int x, int y){
     } else if(pos == 2){
         printf(" O/ %s\n", str);
         gotoxy(x, y + 1);
-        printf("/|");
+        printf("/| ");
     } else if(pos == 3){
+        printf("\\O %s\n", str);
+        gotoxy(x, y + 1);
+        printf(" |\\");
+    } else if(pos == 4){
         printf("\\O/ %s\n", str);
         gotoxy(x, y + 1);
-        printf(" |");
+        printf(" | ");
     }
 
     /* 
@@ -284,13 +312,16 @@ void NPC(int pos, char *str, int x, int y){
             O/
            /|
         3:
+           \O
+            |\
+        4:
            \O/
             |
     */
 }
 
 void ophelp(char op)
-{ 
+{
     CLS 
     switch(op)
     {
@@ -481,7 +512,7 @@ void option(char op)
     CLS switch (op)
     {
     case 0:
-        play();
+        startGame();
         break;
     case 1:
         showRecords();
@@ -509,20 +540,25 @@ void option(char op)
     }
 }
 
-void play()
-{
-    TNote note;
+void startGame(){
     char *options[] = {
         "Cry baby👶",
         "Normal😐", 
         "Rock 'n' Roll🤘"
     };
-
-    int delay, numOps = 3;
-
+    
+    int numOps = 3;
+    
     printf("Set difficulty:");
     int dif = selection(options, numOps);
 
+    play(dif);
+}
+
+void play(int dif)
+{
+    TNote note;
+    int delay;
     if (dif == 0)
         delay = 500;
     if (dif == 1)
@@ -533,6 +569,8 @@ void play()
         return;
 
     int combo = 0;
+    int score = 0;
+    int count = 0;
     bool miss = false;
     note.pos.lin = 0;
     note.pos.col = rand() % COLUMNS;
@@ -568,7 +606,23 @@ void play()
     {
         CLS
             printGame(note);
-        displayScore(_players[currentID].score, combo, miss);
+        displayScore(score, combo, miss);
+
+        if(count < 100){
+            gotoxy(0, lines + 3);
+            printf("[");
+
+            for(int i = 0; i < count; i++){
+                gotoxy(i + 1, lines + 3);
+                printf("#");
+            }
+
+            gotoxy(100, lines + 3);
+            printf("]");
+        } else{
+            Sleep(700);
+            break;
+        }
 
         int check = 0;
         if (kbhit())
@@ -576,7 +630,7 @@ void play()
             char pressed = getch();
             if (toupper(pressed) == note.key && note.pos.lin == (lines / 2))
             {
-                _players[currentID].score += 5;
+                score += 5;
                 miss = false;
                 combo++;
                 if (combo > _players[currentID].maxCombo)
@@ -591,8 +645,8 @@ void play()
             }
             else
             {
-                if (_players[currentID].score >= 5) 
-                    _players[currentID].score -= 5;
+                if (score >= 5)
+                    score -= 5;
                 combo = 0;
                 miss = true;
             }
@@ -601,8 +655,10 @@ void play()
 
         if (note.pos.lin >= lines)
         {
-            _players[currentID].score -= 5;
+            if (score >= 5)
+                score -= 5;
             combo = 0;
+            check = 1;
         }
 
         if (check)
@@ -643,8 +699,59 @@ void play()
             note.pos.lin++;
         }
 
+        count++;
         Sleep(delay);
     }
+
+    _players[currentID].score += score;
+    endGame(score, newRecord);
+}
+
+void endGame(int gameScore, bool newRecord){
+    CLS
+    if(gameScore >= 100){
+        NPC(4, "- ABSOLUTELY🔥", 0, 0);
+        sleep(1);
+        NPC(1, "- ABSOLUTELY🔥", 0, 0);
+        sleep(1);
+        NPC(4, "- ABSOLUTELY🔥", 0, 0);
+        sleep(1);
+        NPC(1, "- ABSOLUTELY🔥", 0, 0);
+    } else if(gameScore >= 25){
+        NPC(2, "- VERY GOOD!", 0, 0);
+    } else{
+        NPC(1, "- Keep trying👏", 0, 0);
+    }
+    PAUSE
+
+    char str[100];
+
+    CLS
+    if(gameScore >= 100){
+        sprintf(str, "- YOU GOT %d POINTS🤯", gameScore);
+        NPC(4, str, 0, 0);
+    } else if(gameScore > 0){
+        sprintf(str, "- You got %d points!", gameScore);
+        NPC(2, str, 0, 0);
+    } else{
+        NPC(2, "- No points😔", 0, 0);
+    }
+    PAUSE
+
+    CLS
+    if(newRecord){
+        sprintf(str, "- YOU HAVE A NEW COMBO!!! [%d]", _players[currentID].maxCombo);
+        NPC(4, str, 0, 0);
+    } else{
+        return;
+    }
+    PAUSE
+
+    CLS
+    if(gameScore >= 100 && newRecord){
+        NPC(4, "- CONGRATULATIONS, YOU ARE AMAZING!!!", 0, 0);
+    }
+    PAUSE
 }
 
 void printGame(TNote note)
@@ -697,7 +804,7 @@ void printGame(TNote note)
 
 void displayScore(int score, int combo, bool miss)
 {
-    gotoxy(0, lines + 1);
+    gotoxy(0, lines);
     printf("\nScore: %d | Combo: x%d", score, combo);
     if (combo >= 10)
     {
@@ -735,6 +842,8 @@ void showRecords()
 
 void sortPlayers()
 {
+    char *currentName = _players[currentID].name;
+
     for (int i = 0; i < _numPlayers - 1; i++)
     {
         for (int j = 0; j < _numPlayers - 1 - i; j++)
@@ -745,6 +854,13 @@ void sortPlayers()
                 _players[j] = _players[j + 1];
                 _players[j + 1] = temp;
             }
+        }
+    }
+
+    for (int i = 0; i < _numPlayers; i++) {
+        if (strcmp(_players[i].name, currentName) == 0) {
+            currentID = i;
+            break;
         }
     }
 }
@@ -842,6 +958,7 @@ void addPlayer()
 
     currentID = _numPlayers;
     _players[_numPlayers] = createPlayer();
+    _players[currentID].firstTime = true;
     _numPlayers++;
 }
 
@@ -1074,6 +1191,7 @@ void saveGame()
         fprintf(gameFile, "%s;", _players[i].name);
         fprintf(gameFile, "%d;", _players[i].score);
         fprintf(gameFile, "%d;", _players[i].maxCombo);
+        fprintf(gameFile, "%d;", _players[i].firstTime);
         fprintf(gameFile, "\n");
     }
     fprintf(gameFile, "%d#", lines);
@@ -1136,6 +1254,11 @@ void loadGame()
                     else if (sep == 2)
                     {
                         _players[_numPlayers].maxCombo = atoi(strAux);
+                        sep++;
+                    }
+                    else if (sep == 3)
+                    {
+                        _players[_numPlayers].firstTime = atoi(strAux);
                         sep = 0;
                         _numPlayers++;
                     }
@@ -1210,3 +1333,4 @@ void gotoxy(int x, int y)
     coord.Y = y;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord); // Windows API to move text cursor
 }
+
