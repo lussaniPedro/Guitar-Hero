@@ -115,11 +115,11 @@ int main()
     while (1)
     {
         char *options[] = {
-            "🕹️  Play",
+            "🕹️ Play",
             "📀 Records",
             "🏆 Ranking",
             "❓ Help",
-            "⚙️  Settings",
+            "⚙️ Settings",
             "💾 Save game",
             "🚪 Quit game"
         };
@@ -578,14 +578,22 @@ void play(int dif)
 {
     TNote note;
     int delay;
-    if (dif == 0)
+    int baseTime;
+
+    if (dif == 0){
         delay = 500;
-    if (dif == 1)
+        baseTime = 30000;
+    } else if (dif == 1){
         delay = 300;
-    if (dif == 2)
+        baseTime = 40000;
+    } else if (dif == 2){
         delay = 200;
-    if (dif == ESC)
+        baseTime = 50000;
+    } else if (dif == ESC){
         return;
+    }
+
+    int time = baseTime / delay;
 
     int combo = 0;
     int score = 0;
@@ -627,7 +635,7 @@ void play(int dif)
             printGame(note);
         displayScore(score, combo, miss);
 
-        if(count < 100){
+        if(count < time){
             gotoxy(0, lines + 3);
             printf("[");
 
@@ -636,7 +644,7 @@ void play(int dif)
                 printf("#");
             }
 
-            gotoxy(100, lines + 3);
+            gotoxy(time, lines + 3);
             printf("]");
         } else{
             Sleep(700);
