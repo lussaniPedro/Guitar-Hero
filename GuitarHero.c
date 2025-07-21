@@ -75,6 +75,7 @@ TPlayer createPlayer(); // Create new player
 void deletePlayer(); // Delete a player
 void changePoints(); // Change points and combo
 void changeGuitarSize(); // Change the number of lines of the guitar
+void openDeveloperMode(); // Request password for developer mode
 void developerMode(); // Develint mode
 void validateAllocation(void *ptr); // Validate memory allocation
 void freeMemory(); // Free memory
@@ -321,6 +322,10 @@ void NPC(int pos, char *str, int x, int y){
         printf("\\O/ %s\n", str);
         gotoxy(x, y + 1);
         printf(" | ");
+    } else if(pos == 5){
+        printf("°_° %s\n", str);
+        gotoxy(x, y + 1);
+        printf("/|\\");
     }
 
     /* 
@@ -336,6 +341,9 @@ void NPC(int pos, char *str, int x, int y){
         4:
            \O/
             |
+        5:
+           °_°
+           /|\
     */
 }
 
@@ -554,7 +562,7 @@ void option(char op)
         exitGame();
         break;
     case (int)'g': // No comments
-        developerMode();
+        openDeveloperMode();
         break;
     }
 }
@@ -1135,6 +1143,25 @@ void changeGuitarSize()
     CLS NOCURSOR
         printf("Guitar size changed!\n");
     SPAUSE
+}
+
+void openDeveloperMode(){
+    char str[20];
+    char password[] = "Gh69";
+
+    CURSOR
+    printf("Enter password: ");
+    gets(str);
+
+    NOCURSOR
+    if(strcmp(str, password) == 0){
+        developerMode();
+    } else{
+        printf("ERROR: Invalid password!");
+        Sleep(700);
+
+        return;
+    }
 }
 
 void developerMode()
