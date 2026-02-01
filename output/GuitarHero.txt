@@ -1,6 +1,6 @@
-Lussani;7720;54;0;
+Lussani;7865;54;0;
 mugg;7030;40;1;
-cannabis;2005;22;0;
+arthur;2005;22;0;
 bill;185;20;1;
 vivi;20;5;1;
 Augusto;0;0;1;
