@@ -47,5 +47,8 @@ This project is a **rhythmic game** inspired by the classic *Guitar Hero*:
 ├── output
 │   ├── GuitarHero.exe  (compiled)
 │   └── GuitarHero.txt  (player save data)
-├── GuitarHero.c (main source code)
+├── src
+│   ├── GuitarHero.c (main source code)
+│   ├── gh_input.c (lib implementation)
+│   └── gh_input.h (lib declaration)
 └── README.md
