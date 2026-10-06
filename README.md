@@ -40,15 +40,25 @@ This project is a **rhythmic game** inspired by the classic *Guitar Hero*:
 
 ---
 
+
 ## 🗂️ Project Structure
 
 ```plaintext
 .
 ├── output
-│   ├── GuitarHero.exe  (compiled)
-│   └── GuitarHero.txt  (player save data)
+│   ├── guitar-hero
+│   └── guitar-hero.txt
 ├── src
-│   ├── GuitarHero.c (main source code)
-│   ├── gh_input.c (lib implementation)
-│   └── gh_input.h (lib declaration)
+│    ├── gh_input.c
+│    ├── gh_input.h
+│    └── main.c
 └── README.md
+```
+
+---
+
+## ▶️ Runing project
+
+```plaintext
+./run.sh
+```
